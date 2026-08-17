@@ -1,0 +1,49 @@
+{
+  "mka-handshake.pcap": [
+    "A MN=1 hello (claim Key Server, no peers yet)",
+    "B MN=1 hello (saw A; Potential Peer List; not Key Server)",
+    "A MN=2 Key Server: Live Peer List + Distributed SAK + SAK Use (tx)",
+    "B MN=2: Live Peer List + SAK Use (tx+rx) after installing SAK",
+    "A MN=3: both sides using SAK (tx+rx), session up",
+    "B MN=3 keepalive"
+  ],
+  "macsec-lab-encrypted.pcap": [
+    "A→B ICMP echo seq=1 (encrypted)",
+    "B→A ICMP seq=1 (encrypted)",
+    "A→B ICMP echo seq=2 (encrypted)",
+    "B→A ICMP seq=2 (encrypted)",
+    "A→B ICMP echo seq=3 (encrypted)",
+    "B→A ICMP seq=3 (encrypted)",
+    "A→B ES=1 no-SCI PN=9 (encrypted)"
+  ],
+  "macsec-lab-integrity-only.pcap": [
+    "A→B ICMP echo seq=1 (integrity-only)",
+    "B→A ICMP seq=1 (integrity-only)",
+    "A→B ICMP echo seq=2 (integrity-only)",
+    "B→A ICMP seq=2 (integrity-only)",
+    "A→B ICMP echo seq=3 (integrity-only)",
+    "B→A ICMP seq=3 (integrity-only)",
+    "A→B ES=1 no-SCI PN=9 (integrity-only)"
+  ],
+  "macsec-ieee-gcm-aes-128-integrity.pcap": [
+    "IEEE GCM-AES-128 integrity-only test vector"
+  ],
+  "macsec-ieee-gcm-aes-128-encrypt.pcap": [
+    "IEEE GCM-AES-128 confidentiality test vector"
+  ],
+  "session-full.pcap": [
+    "A MN=1 hello (claim Key Server, no peers yet)",
+    "B MN=1 hello (saw A; Potential Peer List; not Key Server)",
+    "A MN=2 Key Server: Live Peer List + Distributed SAK + SAK Use (tx)",
+    "B MN=2: Live Peer List + SAK Use (tx+rx) after installing SAK",
+    "A MN=3: both sides using SAK (tx+rx), session up",
+    "B MN=3 keepalive",
+    "A→B ICMP echo seq=1 (encrypted)",
+    "B→A ICMP seq=1 (encrypted)",
+    "A→B ICMP echo seq=2 (encrypted)",
+    "B→A ICMP seq=2 (encrypted)",
+    "A→B ICMP echo seq=3 (encrypted)",
+    "B→A ICMP seq=3 (encrypted)",
+    "A→B ES=1 no-SCI PN=9 (encrypted)"
+  ]
+}

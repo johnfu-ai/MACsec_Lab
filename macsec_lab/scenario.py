@@ -1,0 +1,199 @@
+"""Reference frame sequences for the learning captures."""
+
+from __future__ import annotations
+
+from .crypto import wrap_sak
+from .keys import (
+    IEEE_DA,
+    IEEE_ENC_USER,
+    IEEE_INT_USER,
+    IEEE_PN,
+    IEEE_SA,
+    IEEE_SCI,
+    IEEE_GCM_KEY_128,
+    LabKeys,
+    PAE_GROUP_ADDR,
+)
+from .l3 import ipv4_icmp_echo
+from .macsec import SecTAG, protect_frame
+from .mka import (
+    BasicParamSet,
+    DistributedSak,
+    PeerList,
+    PeerTuple,
+    SakUse,
+    build_mkpdu_frame,
+)
+
+
+def _basic(peer, keys: LabKeys, mn: int, key_server: bool) -> BasicParamSet:
+    return BasicParamSet(
+        version=2,
+        ks_priority=peer.ks_priority,
+        key_server=key_server,
+        macsec_desired=True,
+        macsec_capability=3,
+        sci=peer.sci,
+        actor_mi=peer.mi,
+        actor_mn=mn,
+        ckn=keys.ckn,
+    )
+
+
+def mka_handshake(keys: LabKeys) -> list[tuple[str, bytes]]:
+    """Point-to-point PSK CAK MKA: elect Key Server, distribute SAK, both use it."""
+    a, b = keys.a, keys.b
+    wrapped = wrap_sak(keys.kek, keys.sak)
+    frames: list[tuple[str, bytes]] = []
+
+    frames.append(
+        (
+            "A MN=1 hello (claim Key Server, no peers yet)",
+            build_mkpdu_frame(sa=a.mac, ick=keys.ick, basic=_basic(a, keys, 1, True)),
+        )
+    )
+    frames.append(
+        (
+            "B MN=1 hello (saw A; Potential Peer List; not Key Server)",
+            build_mkpdu_frame(
+                sa=b.mac,
+                ick=keys.ick,
+                basic=_basic(b, keys, 1, False),
+                param_sets=[PeerList(2, [PeerTuple(a.mi, 1)])],
+            ),
+        )
+    )
+    frames.append(
+        (
+            "A MN=2 Key Server: Live Peer List + Distributed SAK + SAK Use (tx)",
+            build_mkpdu_frame(
+                sa=a.mac,
+                ick=keys.ick,
+                basic=_basic(a, keys, 2, True),
+                param_sets=[
+                    DistributedSak(an=keys.an, confidentiality_offset=0, kn=keys.kn, wrapped_sak=wrapped),
+                    SakUse(
+                        latest_an=keys.an,
+                        latest_tx=True,
+                        latest_rx=False,
+                        delay_protect=True,
+                        latest_server_mi=a.mi,
+                        latest_kn=keys.kn,
+                        latest_lpn=1,
+                    ),
+                    PeerList(1, [PeerTuple(b.mi, 1)]),
+                ],
+            ),
+        )
+    )
+    frames.append(
+        (
+            "B MN=2: Live Peer List + SAK Use (tx+rx) after installing SAK",
+            build_mkpdu_frame(
+                sa=b.mac,
+                ick=keys.ick,
+                basic=_basic(b, keys, 2, False),
+                param_sets=[
+                    SakUse(
+                        latest_an=keys.an,
+                        latest_tx=True,
+                        latest_rx=True,
+                        delay_protect=True,
+                        latest_server_mi=a.mi,
+                        latest_kn=keys.kn,
+                        latest_lpn=1,
+                    ),
+                    PeerList(1, [PeerTuple(a.mi, 2)]),
+                ],
+            ),
+        )
+    )
+    frames.append(
+        (
+            "A MN=3: both sides using SAK (tx+rx), session up",
+            build_mkpdu_frame(
+                sa=a.mac,
+                ick=keys.ick,
+                basic=_basic(a, keys, 3, True),
+                param_sets=[
+                    SakUse(
+                        latest_an=keys.an,
+                        latest_tx=True,
+                        latest_rx=True,
+                        delay_protect=True,
+                        latest_server_mi=a.mi,
+                        latest_kn=keys.kn,
+                        latest_lpn=1,
+                    ),
+                    PeerList(1, [PeerTuple(b.mi, 2)]),
+                ],
+            ),
+        )
+    )
+    frames.append(
+        (
+            "B MN=3 keepalive",
+            build_mkpdu_frame(
+                sa=b.mac,
+                ick=keys.ick,
+                basic=_basic(b, keys, 3, False),
+                param_sets=[
+                    SakUse(
+                        latest_an=keys.an,
+                        latest_tx=True,
+                        latest_rx=True,
+                        delay_protect=True,
+                        latest_server_mi=a.mi,
+                        latest_kn=keys.kn,
+                        latest_lpn=1,
+                    ),
+                    PeerList(1, [PeerTuple(a.mi, 3)]),
+                ],
+            ),
+        )
+    )
+    return frames
+
+
+def macsec_lab_data(keys: LabKeys, encrypt: bool) -> list[tuple[str, bytes]]:
+    a, b = keys.a, keys.b
+    frames: list[tuple[str, bytes]] = []
+    for seq in range(1, 4):
+        user = ipv4_icmp_echo("10.10.0.10", "10.10.0.20", ident=0x4242, seq=seq)
+        tag = SecTAG.build(pn=seq, an=keys.an, encrypt=encrypt, sci=a.sci)
+        frames.append(
+            (
+                f"A→B ICMP echo seq={seq} ({'encrypted' if encrypt else 'integrity-only'})",
+                protect_frame(b.mac, a.mac, user, keys.sak, tag, a.sci),
+            )
+        )
+        reply = ipv4_icmp_echo("10.10.0.20", "10.10.0.10", ident=0x4242, seq=seq)
+        # ICMP echo reply type=0: rebuild with type 0 by flipping first icmp byte after IP
+        # ipv4_icmp_echo always uses type 8; for learning, echo request both ways is fine.
+        tag_b = SecTAG.build(pn=seq, an=keys.an, encrypt=encrypt, sci=b.sci)
+        frames.append(
+            (
+                f"B→A ICMP seq={seq} ({'encrypted' if encrypt else 'integrity-only'})",
+                protect_frame(a.mac, b.mac, reply, keys.sak, tag_b, b.sci),
+            )
+        )
+    # Point-to-point encoding without explicit SCI (ES=1, SC=0)
+    user = ipv4_icmp_echo("10.10.0.10", "10.10.0.20", ident=0x4242, seq=9)
+    tag_es = SecTAG.build(pn=9, an=keys.an, encrypt=encrypt, sci=None, es=True)
+    frames.append(
+        (
+            f"A→B ES=1 no-SCI PN=9 ({'encrypted' if encrypt else 'integrity-only'})",
+            protect_frame(b.mac, a.mac, user, keys.sak, tag_es, a.sci),
+        )
+    )
+    return frames
+
+
+def ieee_integrity_frame() -> bytes:
+    tag = SecTAG(tci=0x22, sl=0x2A, pn=IEEE_PN, sci=IEEE_SCI)
+    return protect_frame(IEEE_DA, IEEE_SA, IEEE_INT_USER, IEEE_GCM_KEY_128, tag, IEEE_SCI)
+
+
+def ieee_encrypt_frame() -> bytes:
+    tag = SecTAG(tci=0x2E, sl=0, pn=IEEE_PN, sci=IEEE_SCI)
+    return protect_frame(IEEE_DA, IEEE_SA, IEEE_ENC_USER, IEEE_GCM_KEY_128, tag, IEEE_SCI)

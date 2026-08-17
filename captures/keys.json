@@ -1,0 +1,19 @@
+{
+  "cak": "00112233445566778899aabbccddeeff",
+  "ckn": "4d41435345432d4c41422d434b4e3031",
+  "ckn_ascii": "MACSEC-LAB-CKN01",
+  "sak": "a1a2a3a4a5a6a7a8a9aaabacadaeafb0",
+  "kek": "4adf6a4df4146c154a8b5f5ae7c6f10d",
+  "ick": "fe740aa3f51cbdbb4e36d273b644ea8d",
+  "kn": "1",
+  "an": "0",
+  "a_mac": "02:00:00:00:00:0a",
+  "a_sci": "02000000000a0001",
+  "a_mi": "aa01aa02aa03aa04aa05aa06",
+  "a_ks_priority": "16",
+  "b_mac": "02:00:00:00:00:0b",
+  "b_sci": "02000000000b0001",
+  "b_mi": "bb01bb02bb03bb04bb05bb06",
+  "b_ks_priority": "32",
+  "pae_group": "01:80:c2:00:00:03"
+}

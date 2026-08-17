@@ -1,0 +1,12 @@
+
+===================================================================
+Protocol Hierarchy Statistics
+Filter: 
+
+frame                                    frames:13 bytes:1380
+  eth                                    frames:13 bytes:1380
+    eapol                                frames:6 bytes:800
+      mka                                frames:6 bytes:800
+    macsec                               frames:7 bytes:580
+      data                               frames:7 bytes:580
+===================================================================

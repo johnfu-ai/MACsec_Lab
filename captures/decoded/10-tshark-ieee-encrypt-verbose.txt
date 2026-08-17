@@ -1,0 +1,47 @@
+Frame 1: Packet, 92 bytes on wire (736 bits), 92 bytes captured (736 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:20.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:20.000000000 UTC
+    Epoch Arrival Time: 1700000000.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time since reference or first frame: 0.000000000 seconds]
+    Frame Number: 1
+    Frame Length: 92 bytes (736 bits)
+    Capture Length: 92 bytes (736 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:macsec:data]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 7a:0d:46:df:99:8d (7a:0d:46:df:99:8d), Dst: d6:09:b1:f0:56:63 (d6:09:b1:f0:56:63)
+    Destination: d6:09:b1:f0:56:63 (d6:09:b1:f0:56:63)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Source: 7a:0d:46:df:99:8d (7a:0d:46:df:99:8d)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1AE (MACsec) (0x88e5)
+    [Stream index: 0]
+802.1AE Security Tag
+    0010 11.. = TCI: 0x0b, VER: 0x0, SC, E, C
+        0... .... = VER: 0x0
+        .0.. .... = ES: Not set
+        ..1. .... = SC: Set
+        ...0 .... = SCB: Not set
+        .... 1... = E: Set
+        .... .1.. = C: Set
+    .... ..10 = AN: 0x2
+    Short length: 0
+    Packet number: 2999092325
+    System Identifier: 12:15:35:24:c0:89 (12:15:35:24:c0:89)
+    Port Identifier: 24193
+    ICV: 4f8d55e7d3f06fd5a13c0c29b9d5b880
+    [Verification Info]
+        [Frame Verification Successful: False]
+Data (48 bytes)
+
+0000  70 1a fa 1c c0 39 c0 d7 65 12 8a 66 5d ab 69 24   p....9..e..f].i$
+0010  38 99 bf 73 18 cc dc 81 c9 93 1d a1 7f be 8e dd   8..s............
+0020  7d 17 cb 8b 4c 26 fc 81 e3 28 4f 2b 7f ba 71 3d   }...L&...(O+..q=
+    Data: 701afa1cc039c0d765128a665dab69243899bf7318ccdc81c9931da17fbe8edd7d17cb8b4c26fc81e3284f2b7fba713d
+    [Length: 48]
+
