@@ -11,6 +11,7 @@ from .scenario import (
     ieee_encrypt_frame,
     ieee_integrity_frame,
     macsec_lab_data,
+    mka_after_eap,
     mka_handshake,
 )
 
@@ -25,9 +26,13 @@ def _packets(frames: list[tuple[str, bytes]], t0: int = 1_700_000_000) -> list[P
 def generate(out_dir: Path) -> dict[str, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     keys = LabKeys.default()
-    (out_dir / "keys.json").write_text(json.dumps(keys.as_dict(), indent=2) + "\n")
+    eap_keys = LabKeys.eap_default()
+    blob = keys.as_dict()
+    blob["eap"] = eap_keys.as_dict()
+    (out_dir / "keys.json").write_text(json.dumps(blob, indent=2) + "\n")
 
     mka = mka_handshake(keys)
+    eap_mka = mka_after_eap(eap_keys)
     enc = macsec_lab_data(keys, encrypt=True)
     integ = macsec_lab_data(keys, encrypt=False)
     ieee_i = [("IEEE GCM-AES-128 integrity-only test vector", ieee_integrity_frame())]
@@ -36,6 +41,7 @@ def generate(out_dir: Path) -> dict[str, Path]:
 
     mapping = {
         "mka-handshake.pcap": mka,
+        "mka-after-eap.pcap": eap_mka,
         "macsec-lab-encrypted.pcap": enc,
         "macsec-lab-integrity-only.pcap": integ,
         "macsec-ieee-gcm-aes-128-integrity.pcap": ieee_i,

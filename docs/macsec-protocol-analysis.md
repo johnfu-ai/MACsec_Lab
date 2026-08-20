@@ -1,6 +1,6 @@
 # MACsec (IEEE 802.1AE) 报文解析
 
-数据面：SecY 用 **SAK** 保护用户帧。控制面（谁生成 SAK、怎么发给对端）见 [mka-protocol-analysis.md](mka-protocol-analysis.md)。
+数据面：SecY 用 **SAK** 保护用户帧。CAK / CKN / KEK / ICK 都不进入 GCM。SAK 从哪来见 [key-hierarchy.md](key-hierarchy.md)；控制面（谁生成 SAK、怎么发给对端）见 [mka-protocol-analysis.md](mka-protocol-analysis.md)。
 
 - [docs/mka-protocol-analysis.md](mka-protocol-analysis.md)、[docs/macsec-protocol-analysis.md](macsec-protocol-analysis.md) 讲格式
 - **每一条线上消息的字段拆解**见 [docs/protocol-analysis.md](protocol-analysis.md)（由 `make generate` 根据 pcap 生成）

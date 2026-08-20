@@ -43,6 +43,31 @@ def derive_ick(cak: bytes, ckn: bytes, ick_len: int = 16) -> bytes:
     return aes_kdf(cak, "IEEE8021 ICK", ctx, ick_len * 8)
 
 
+def ordered_macs(mac_a: bytes, mac_b: bytes) -> bytes:
+    """802.1X 6.2.2: mac1 is the numerically lesser address, mac2 the greater."""
+    if len(mac_a) != 6 or len(mac_b) != 6:
+        raise ValueError("MAC addresses must be 6 octets")
+    if mac_a < mac_b:
+        return mac_a + mac_b
+    return mac_b + mac_a
+
+
+def derive_eap_cak(msk: bytes, mac_a: bytes, mac_b: bytes, cak_len: int = 16) -> bytes:
+    """CAK = KDF(MSK[0:cak_len], 'IEEE8021 EAP CAK', mac1||mac2, CAKlength).
+
+    Labels are 16 ASCII bytes (not the 12-byte KEK/ICK labels).
+    """
+    key = msk[:cak_len]
+    return aes_kdf(key, "IEEE8021 EAP CAK", ordered_macs(mac_a, mac_b), cak_len * 8)
+
+
+def derive_eap_ckn(msk: bytes, mac_a: bytes, mac_b: bytes, session_id: bytes, cak_len: int = 16) -> bytes:
+    """CKN = KDF(MSK[0:cak_len], 'IEEE8021 EAP CKN', Session-ID||mac1||mac2, 128)."""
+    key = msk[:cak_len]
+    ctx = session_id + ordered_macs(mac_a, mac_b)
+    return aes_kdf(key, "IEEE8021 EAP CKN", ctx, 128)
+
+
 def wrap_sak(kek: bytes, sak: bytes) -> bytes:
     return aes_key_wrap(kek, sak)
 

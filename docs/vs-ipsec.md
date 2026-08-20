@@ -8,6 +8,8 @@
 | Channel id | SCI | SPI |
 | Sequence | PN in SecTAG | ESP Sequence Number |
 | Auth of control | AES-CMAC(ICK) | IKE AUTH / ECDSA certs |
+| PSK means | Pre-share **CAK+CKN**; SAK still from MKA | Pre-share IKE authenticator; ESP keys still from IKE |
+| Data-plane key | SAK (Key Server generates; not `KDF(CAK)`) | ESP keys from IKE keymat |
 | Scope | Single hop | End-to-end or tunnel across routers |
 | Typical use | Switch/router port to port | Site-to-site, host VPN |
 

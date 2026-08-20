@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .keys import (
+    EAPOL_TYPE_EAP,
     ETHERTYPE_EAPOL,
     ETHERTYPE_IPV4,
     ETHERTYPE_MACSEC,
@@ -216,6 +217,13 @@ def dissect_mka(frame: bytes, keys: LabKeys) -> tuple[str, list[Field], dict]:
                 "00-80-C2-01 = 802.1X-2010 AES-CMAC",
             )
             ckn_off = abs_off + 32
+            ckn_note = "EAP-derived CKN (KDF); both sides must match"
+            try:
+                text = obj.ckn.decode("ascii")
+                if text.isprintable():
+                    ckn_note = f"ASCII {text!r}，两端必须一致"
+            except UnicodeDecodeError:
+                pass
             _add(
                 fields,
                 frame,
@@ -223,7 +231,7 @@ def dissect_mka(frame: bytes, keys: LabKeys) -> tuple[str, list[Field], dict]:
                 len(obj.ckn),
                 "CKN",
                 obj.ckn.hex(),
-                f"ASCII {obj.ckn.decode('ascii', 'replace')!r}，两端必须一致",
+                ckn_note,
             )
             pad = total - (32 + len(obj.ckn))
             if pad:
@@ -316,6 +324,52 @@ def dissect_mka(frame: bytes, keys: LabKeys) -> tuple[str, list[Field], dict]:
     return title, fields, parsed
 
 
+EAP_CODES = {1: "Request", 2: "Response", 3: "Success", 4: "Failure"}
+
+
+def dissect_eap(frame: bytes) -> tuple[str, list[Field], dict]:
+    """Offset map for EAPOL-EAP (type 0). Lab capture is EAP-Success only."""
+    da, sa = frame[0:6], frame[6:12]
+    eapol = frame[14:]
+    ver, ptype = eapol[0], eapol[1]
+    body_len = int.from_bytes(eapol[2:4], "big")
+    eap = eapol[4 : 4 + body_len]
+    code = eap[0] if eap else -1
+    ident = eap[1] if len(eap) > 1 else 0
+    eap_len = int.from_bytes(eap[2:4], "big") if len(eap) >= 4 else 0
+    fields = ethernet_fields(frame, "802.1X EAPOL")
+    _add(fields, frame, 14, 1, "EAPOL Version", str(ver), "3 = 802.1X-2010")
+    _add(fields, frame, 15, 1, "EAPOL Type", str(ptype), "0 = EAP-Packet（MKA 是 5）")
+    _add(fields, frame, 16, 2, "Packet Body Length", str(body_len), "EAP 报文长度")
+    if eap:
+        _add(
+            fields,
+            frame,
+            18,
+            1,
+            "EAP Code",
+            str(code),
+            EAP_CODES.get(code, "unknown"),
+        )
+        _add(fields, frame, 19, 1, "EAP Identifier", str(ident), "与前序 Request 对应")
+        _add(fields, frame, 20, 2, "EAP Length", str(eap_len), "Success/Failure 固定为 4")
+    used = 14 + 4 + body_len
+    if used < len(frame):
+        _add(fields, frame, used, len(frame) - used, "Ethernet padding", "00…", f"{len(frame) - used} 字节")
+    title = f"EAPOL-EAP  {EAP_CODES.get(code, f'code={code}')}"
+    parsed = {
+        "da": da,
+        "sa": sa,
+        "eapol_version": ver,
+        "eapol_type": ptype,
+        "body_len": body_len,
+        "eap_code": code,
+        "eap_identifier": ident,
+        "wire_len": used,
+    }
+    return title, fields, parsed
+
+
 def dissect_macsec(frame: bytes, sak: bytes, sci_a: bytes, sci_b: bytes) -> tuple[str, list[Field], dict, list[Field]]:
     parsed = None
     last_err = None
@@ -393,6 +447,10 @@ def dissect_macsec(frame: bytes, sak: bytes, sci_a: bytes, sci_b: bytes) -> tupl
 def one_line(frame: bytes, keys: LabKeys, sci_a: bytes, sci_b: bytes) -> str:
     et = int.from_bytes(frame[12:14], "big")
     if et == ETHERTYPE_EAPOL:
+        ptype = frame[15] if len(frame) > 15 else -1
+        if ptype == EAPOL_TYPE_EAP:
+            code = frame[18] if len(frame) > 18 else -1
+            return f"EAPOL-EAP {EAP_CODES.get(code, f'code={code}')}"
         p = parse_eapol_mka(frame, keys.ick, keys.kek)
         sets = ", ".join(s["type"] for s in p["param_sets"]) or "仅 Basic"
         role = "KS" if p["basic"].key_server else "peer"

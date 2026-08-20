@@ -72,6 +72,8 @@ Body length 是 12 bit，占用 octet 3 的低 4 bit + octet 4。Basic 固定部
 
 ## 3. 密钥派生（9.3 / 6.2.1）
 
+层次图与五个对象对照：[key-hierarchy.md](key-hierarchy.md)。CAK **从不**加密用户帧；SAK **不是**从 CAK 派生的。
+
 KDF = NIST SP 800-108 计数器模式，PRF = AES-CMAC，label 恰好 12 字节：
 
 ```
@@ -80,6 +82,35 @@ ICK = KDF(CAK, "IEEE8021 ICK", CKN[0:16], 128)
 ```
 
 演示值见 `captures/keys.json`（**公开，勿用于真实链路**）。
+
+## 3b. PSK CAK vs EAP 鉴权成功之后
+
+MKPDU **参数集相同**（Basic → Potential/Live Peer → Distributed SAK → SAK Use）。不一样的是 CAK 从哪来、谁当 Key Server。
+
+| | PSK（`mka-handshake.pcap`） | EAP 成功之后（`mka-after-eap.pcap`） |
+|---|---|---|
+| 抓包起点 | 第一帧就是 EAPOL-MKA | 先 **EAP-Success**（EAPOL type 0），再 MKA（type 5） |
+| CAK | 事先配置 | `CAK = KDF(MSK[0:16], "IEEE8021 EAP CAK", mac1\|\|mac2)`（label **16** 字节） |
+| CKN | 任意 1–32 字节名字（本实验室 ASCII） | `CKN = KDF(MSK[0:16], "IEEE8021 EAP CKN", Session-ID\|\|mac1\|\|mac2)` |
+| Key Server | 两端比 priority / SCI | **Authenticator** 通常 priority 0，Supplicant 255 |
+| EAP-TLS | 无 | 完整握手在 [IEEE_802.1X_Lab](https://github.com/johnfu-ai/IEEE_802.1X_Lab)；本仓库从 Success 起 |
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Auth as Authenticator (KS prio 0)
+    participant Supp as Supplicant (prio 255)
+    Note over Auth,Supp: EAP-TLS done; MSK on both sides
+    Auth->>Supp: EAP-Success
+    Auth->>Supp: EAPOL-MKA MN=1 Key Server hello
+    Supp->>Auth: EAPOL-MKA MN=1 Potential Peer List
+    Auth->>Supp: Live Peer + Distributed SAK + SAK Use (tx)
+    Supp->>Auth: Live Peer + SAK Use (tx+rx)
+    Auth->>Supp: SAK Use (tx+rx) session up
+    Supp->>Auth: keepalive
+```
+
+逐帧偏移表：[captures/decoded/11-mka-after-eap.md](../captures/decoded/11-mka-after-eap.md)。
 
 ## 4. ICV（9.4.1）
 

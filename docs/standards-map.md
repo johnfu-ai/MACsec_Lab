@@ -6,7 +6,9 @@
 | GCM-AES-128 IV/AAD/ICV | IEEE 802.1AE-2018 Clause 14 | `macsec_lab/crypto.py` `gcm_protect` |
 | Published GCM vectors | [Randall 2011](https://ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf) | `tests/test_protocol.py`, `captures/macsec-ieee-*.pcap` |
 | MKA, KaY, MKPDU | IEEE 802.1X-2020 Clause 9, 11 | `macsec_lab/mka.py` |
-| KDF, KEK, ICK | 802.1X 6.2.1, 9.3.3 | `derive_kek` / `derive_ick` |
+| KDF, KEK, ICK | 802.1X 6.2.1, 9.3.3 | `derive_kek` / `derive_ick`, [key-hierarchy.md](key-hierarchy.md) |
+| CAK/CKN from EAP MSK | 802.1X 6.2.2 | `derive_eap_cak` / `derive_eap_ckn`, `mka-after-eap.pcap` |
+| SAK generation / wrap | 802.1X 9.8 / Figure 11-11 | Key Server generates SAK; `wrap_sak`; not `KDF(CAK)` |
 | MKPDU ICV | 802.1X 9.4.1 | `mka_icv_input` |
 | AES-CMAC | IETF RFC 4493 | `aes_cmac` |
 | AES Key Wrap | IETF RFC 3394 / 802.1X 9.8.2 | `wrap_sak` |

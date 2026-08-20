@@ -9,15 +9,16 @@ sequenceDiagram
     autonumber
     participant A as node-a KS prio 16
     participant B as node-b prio 32
-    A->>B: MKA MN=1 hello（自称 Key Server）
+    Note over A,B: same CAK / CKN (PSK)
+    A->>B: MKA MN=1 hello (claim Key Server)
     B->>A: MKA MN=1 Potential Peer List
     A->>B: MKA MN=2 Distributed SAK + SAK Use tx
     B->>A: MKA MN=2 SAK Use tx+rx
-    A->>B: MKA MN=3 双方都在用 SAK
+    A->>B: MKA MN=3 both using SAK
     B->>A: MKA MN=3 keepalive
-    A->>B: MACsec ICMP PN=1..3（加密）
-    B->>A: MACsec ICMP PN=1..3（加密）
-    A->>B: MACsec PN=9 ES=1 无 SCI
+    A->>B: MACsec ICMP PN=1..3 (encrypted)
+    B->>A: MACsec ICMP PN=1..3 (encrypted)
+    A->>B: MACsec PN=9 ES=1 no SCI
 ```
 
 分文件报告（同一套解析器）：
@@ -27,6 +28,7 @@ sequenceDiagram
 - [captures/decoded/03-macsec-integrity-only.md](../captures/decoded/03-macsec-integrity-only.md)
 - [captures/decoded/04-ieee-integrity.md](../captures/decoded/04-ieee-integrity.md)
 - [captures/decoded/05-ieee-encrypt.md](../captures/decoded/05-ieee-encrypt.md)
+- [captures/decoded/11-mka-after-eap.md](../captures/decoded/11-mka-after-eap.md) — EAP-Success 之后的 MKA（Authenticator 为 Key Server）
 
 格式与密钥体系背景：[mka-protocol-analysis.md](mka-protocol-analysis.md)、[macsec-protocol-analysis.md](macsec-protocol-analysis.md)。
 
@@ -782,7 +784,7 @@ sequenceDiagram
 | 14 | 1 | `4c` | TCI/AN | `0x4c` | V=0 ES=1 SC=0 SCB=0 E=1 C=1 AN=0；模式 confidentiality+integrity |
 | 15 | 1 | `28` | SL | `40` | Secure Data < 48 时填长度，否则 0 |
 | 16 | 4 | `00000009` | PN | `9 (0x00000009)` | 抗重放；GCM IV 的低 32 bit |
-| 20 | 0 | `` | SCI (inferred) | `02000000000a0001` | 线上无 SCI；ES=1 时用 SA‖00-01 还原，仍参与 IV |
+| 20 | 0 | `02000000000a0001` | SCI (inferred) | `02000000000a0001` | 线上无 SCI；ES=1 时用 SA‖00-01 还原，仍参与 IV |
 | 20 | 40 | `3394d9cae188f72ddab1839035759139…ecba009b` | Secure Data | `3394d9cae188f72ddab1839035759139e1c14cd7c5c79b86244dbbdd630969eb43dc9773ecba009b` | 密文 |
 | 60 | 16 | `aeaa5a25d25f4ea4a91436d1b016cd0e` | MACsec ICV | `aeaa5a25d25f4ea4a91436d1b016cd0e` | GCM tag；校验 通过 |
 

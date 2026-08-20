@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from .crypto import wrap_sak
 from .keys import (
+    EAP_CODE_SUCCESS,
+    EAPOL_TYPE_EAP,
+    EAPOL_VERSION,
+    ETHERTYPE_EAPOL,
     IEEE_DA,
     IEEE_ENC_USER,
     IEEE_INT_USER,
@@ -12,7 +16,6 @@ from .keys import (
     IEEE_SCI,
     IEEE_GCM_KEY_128,
     LabKeys,
-    PAE_GROUP_ADDR,
 )
 from .l3 import ipv4_icmp_echo
 from .macsec import SecTAG, protect_frame
@@ -40,21 +43,37 @@ def _basic(peer, keys: LabKeys, mn: int, key_server: bool) -> BasicParamSet:
     )
 
 
-def mka_handshake(keys: LabKeys) -> list[tuple[str, bytes]]:
-    """Point-to-point PSK CAK MKA: elect Key Server, distribute SAK, both use it."""
+def eap_success_frame(authenticator_mac: bytes, supplicant_mac: bytes, identifier: int = 2) -> bytes:
+    """EAPOL-EAP Success (type 0, EAP code 3). Unicast to the supplicant."""
+    eap = bytes([EAP_CODE_SUCCESS, identifier & 0xFF]) + (4).to_bytes(2, "big")
+    eapol = bytes([EAPOL_VERSION, EAPOL_TYPE_EAP]) + len(eap).to_bytes(2, "big") + eap
+    return (
+        supplicant_mac
+        + authenticator_mac
+        + ETHERTYPE_EAPOL.to_bytes(2, "big")
+        + eapol
+    )
+
+
+def mka_handshake(keys: LabKeys, a_label: str = "A", b_label: str = "B") -> list[tuple[str, bytes]]:
+    """Point-to-point MKA: elect Key Server, distribute SAK, both use it.
+
+    Same MKPDU parameter sets for PSK CAK and EAP-derived CAK. Callers differ
+    by LabKeys (CAK source, KS priority) and the optional EAP-Success prefix.
+    """
     a, b = keys.a, keys.b
     wrapped = wrap_sak(keys.kek, keys.sak)
     frames: list[tuple[str, bytes]] = []
 
     frames.append(
         (
-            "A MN=1 hello (claim Key Server, no peers yet)",
+            f"{a_label} MN=1 hello (claim Key Server, no peers yet)",
             build_mkpdu_frame(sa=a.mac, ick=keys.ick, basic=_basic(a, keys, 1, True)),
         )
     )
     frames.append(
         (
-            "B MN=1 hello (saw A; Potential Peer List; not Key Server)",
+            f"{b_label} MN=1 hello (saw {a_label}; Potential Peer List; not Key Server)",
             build_mkpdu_frame(
                 sa=b.mac,
                 ick=keys.ick,
@@ -65,7 +84,7 @@ def mka_handshake(keys: LabKeys) -> list[tuple[str, bytes]]:
     )
     frames.append(
         (
-            "A MN=2 Key Server: Live Peer List + Distributed SAK + SAK Use (tx)",
+            f"{a_label} MN=2 Key Server: Live Peer List + Distributed SAK + SAK Use (tx)",
             build_mkpdu_frame(
                 sa=a.mac,
                 ick=keys.ick,
@@ -88,7 +107,7 @@ def mka_handshake(keys: LabKeys) -> list[tuple[str, bytes]]:
     )
     frames.append(
         (
-            "B MN=2: Live Peer List + SAK Use (tx+rx) after installing SAK",
+            f"{b_label} MN=2: Live Peer List + SAK Use (tx+rx) after installing SAK",
             build_mkpdu_frame(
                 sa=b.mac,
                 ick=keys.ick,
@@ -110,7 +129,7 @@ def mka_handshake(keys: LabKeys) -> list[tuple[str, bytes]]:
     )
     frames.append(
         (
-            "A MN=3: both sides using SAK (tx+rx), session up",
+            f"{a_label} MN=3: both sides using SAK (tx+rx), session up",
             build_mkpdu_frame(
                 sa=a.mac,
                 ick=keys.ick,
@@ -132,7 +151,7 @@ def mka_handshake(keys: LabKeys) -> list[tuple[str, bytes]]:
     )
     frames.append(
         (
-            "B MN=3 keepalive",
+            f"{b_label} MN=3 keepalive",
             build_mkpdu_frame(
                 sa=b.mac,
                 ick=keys.ick,
@@ -153,6 +172,16 @@ def mka_handshake(keys: LabKeys) -> list[tuple[str, bytes]]:
         )
     )
     return frames
+
+
+def mka_after_eap(keys: LabKeys) -> list[tuple[str, bytes]]:
+    """EAP-Success then MKA. CAK/CKN already derived from MSK (off-wire)."""
+    success = eap_success_frame(keys.a.mac, keys.b.mac)
+    mka = mka_handshake(keys, a_label="Authenticator", b_label="Supplicant")
+    return [
+        ("EAP-Success (Authenticator → Supplicant; MSK already on both sides)", success),
+        *mka,
+    ]
 
 
 def macsec_lab_data(keys: LabKeys, encrypt: bool) -> list[tuple[str, bytes]]:

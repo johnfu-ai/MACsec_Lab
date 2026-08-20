@@ -7,6 +7,15 @@
     "A MN=3: both sides using SAK (tx+rx), session up",
     "B MN=3 keepalive"
   ],
+  "mka-after-eap.pcap": [
+    "EAP-Success (Authenticator → Supplicant; MSK already on both sides)",
+    "Authenticator MN=1 hello (claim Key Server, no peers yet)",
+    "Supplicant MN=1 hello (saw Authenticator; Potential Peer List; not Key Server)",
+    "Authenticator MN=2 Key Server: Live Peer List + Distributed SAK + SAK Use (tx)",
+    "Supplicant MN=2: Live Peer List + SAK Use (tx+rx) after installing SAK",
+    "Authenticator MN=3: both sides using SAK (tx+rx), session up",
+    "Supplicant MN=3 keepalive"
+  ],
   "macsec-lab-encrypted.pcap": [
     "A→B ICMP echo seq=1 (encrypted)",
     "B→A ICMP seq=1 (encrypted)",

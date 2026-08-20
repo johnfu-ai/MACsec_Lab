@@ -750,7 +750,7 @@
 | 14 | 1 | `4c` | TCI/AN | `0x4c` | V=0 ES=1 SC=0 SCB=0 E=1 C=1 AN=0；模式 confidentiality+integrity |
 | 15 | 1 | `28` | SL | `40` | Secure Data < 48 时填长度，否则 0 |
 | 16 | 4 | `00000009` | PN | `9 (0x00000009)` | 抗重放；GCM IV 的低 32 bit |
-| 20 | 0 | `` | SCI (inferred) | `02000000000a0001` | 线上无 SCI；ES=1 时用 SA‖00-01 还原，仍参与 IV |
+| 20 | 0 | `02000000000a0001` | SCI (inferred) | `02000000000a0001` | 线上无 SCI；ES=1 时用 SA‖00-01 还原，仍参与 IV |
 | 20 | 40 | `3394d9cae188f72ddab1839035759139…ecba009b` | Secure Data | `3394d9cae188f72ddab1839035759139e1c14cd7c5c79b86244dbbdd630969eb43dc9773ecba009b` | 密文 |
 | 60 | 16 | `aeaa5a25d25f4ea4a91436d1b016cd0e` | MACsec ICV | `aeaa5a25d25f4ea4a91436d1b016cd0e` | GCM tag；校验 通过 |
 

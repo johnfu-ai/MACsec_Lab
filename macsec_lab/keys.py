@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .crypto import derive_ick, derive_kek
+from .crypto import derive_eap_cak, derive_eap_ckn, derive_ick, derive_kek
 
 PAE_GROUP_ADDR = bytes.fromhex("0180c2000003")
 ETHERTYPE_EAPOL = 0x888E
@@ -16,8 +16,10 @@ ETHERTYPE_MACSEC = 0x88E5
 ETHERTYPE_IPV4 = 0x0800
 
 # IEEE 802.1X Table 11-3
+EAPOL_TYPE_EAP = 0
 EAPOL_TYPE_MKA = 5
 EAPOL_VERSION = 3
+EAP_CODE_SUCCESS = 3
 
 MKA_ALGO_AGILITY = bytes.fromhex("0080c201")  # 00-80-C2-01 (802.1X-2010)
 
@@ -87,6 +89,9 @@ class LabKeys:
     an: int
     a: Peer
     b: Peer
+    source: str = "psk"
+    msk: bytes = b""
+    eap_session_id: bytes = b""
 
     @classmethod
     def default(cls) -> "LabKeys":
@@ -117,25 +122,81 @@ class LabKeys:
             an=0,
             a=a,
             b=b,
+            source="psk",
+        )
+
+    @classmethod
+    def eap_default(cls) -> "LabKeys":
+        """CAK/CKN from a demo EAP MSK (802.1X 6.2.2). Authenticator is Key Server."""
+        msk = _h("0123456789abcdef" * 8)  # 64-octet demo MSK
+        session_id = (
+            bytes([0x0D])  # EAP-TLS type (RFC 5216 / RFC 5247 Session-Id)
+            + b"CLIENT-RANDOM-MACSEC-LAB-000001"[:32].ljust(32, b"\x00")
+            + b"SERVER-RANDOM-MACSEC-LAB-000001"[:32].ljust(32, b"\x00")
+        )
+        auth = Peer.make(
+            "authenticator",
+            _h("02000000000a"),
+            1,
+            0,
+            _h("cc01cc02cc03cc04cc05cc06"),
+        )
+        supp = Peer.make(
+            "supplicant",
+            _h("02000000000b"),
+            1,
+            255,
+            _h("dd01dd02dd03dd04dd05dd06"),
+        )
+        cak = derive_eap_cak(msk, auth.mac, supp.mac)
+        ckn = derive_eap_ckn(msk, auth.mac, supp.mac, session_id)
+        sak = _h("b1b2b3b4b5b6b7b8b9babbbcbdbebfc0")
+        return cls(
+            cak=cak,
+            ckn=ckn,
+            sak=sak,
+            kek=derive_kek(cak, ckn),
+            ick=derive_ick(cak, ckn),
+            kn=1,
+            an=0,
+            a=auth,
+            b=supp,
+            source="eap",
+            msk=msk,
+            eap_session_id=session_id,
         )
 
     def as_dict(self) -> dict[str, str]:
-        return {
+        out: dict[str, str] = {
+            "source": self.source,
             "cak": self.cak.hex(),
             "ckn": self.ckn.hex(),
-            "ckn_ascii": self.ckn.decode("ascii"),
             "sak": self.sak.hex(),
             "kek": self.kek.hex(),
             "ick": self.ick.hex(),
             "kn": f"{self.kn}",
             "an": f"{self.an}",
+            "a_name": self.a.name,
             "a_mac": self.a.mac.hex(":"),
             "a_sci": self.a.sci.hex(),
             "a_mi": self.a.mi.hex(),
             "a_ks_priority": str(self.a.ks_priority),
+            "b_name": self.b.name,
             "b_mac": self.b.mac.hex(":"),
             "b_sci": self.b.sci.hex(),
             "b_mi": self.b.mi.hex(),
             "b_ks_priority": str(self.b.ks_priority),
             "pae_group": PAE_GROUP_ADDR.hex(":"),
         }
+        try:
+            text = self.ckn.decode("ascii")
+            if text.isprintable():
+                out["ckn_ascii"] = text
+        except UnicodeDecodeError:
+            pass
+        if self.msk:
+            out["msk"] = self.msk.hex()
+            out["eap_session_id"] = self.eap_session_id.hex()
+            out["cak_kdf_label"] = "IEEE8021 EAP CAK"
+            out["ckn_kdf_label"] = "IEEE8021 EAP CKN"
+        return out

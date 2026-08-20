@@ -6,13 +6,22 @@ import json
 from pathlib import Path
 
 from .dissect import (
+    dissect_eap,
     dissect_macsec,
     dissect_mka,
     field_table,
     one_line,
     xxd,
 )
-from .keys import ETHERTYPE_EAPOL, ETHERTYPE_MACSEC, IEEE_GCM_KEY_128, IEEE_SCI, LabKeys
+from .keys import (
+    EAPOL_TYPE_EAP,
+    ETHERTYPE_EAPOL,
+    ETHERTYPE_MACSEC,
+    IEEE_GCM_KEY_128,
+    IEEE_SCI,
+    LabKeys,
+    Peer,
+)
 from .pcap import read_pcap
 
 
@@ -20,12 +29,20 @@ def _mac(b: bytes) -> str:
     return ":".join(f"{x:02x}" for x in b)
 
 
-def _load_keys(capture_dir: Path) -> LabKeys:
-    keys = LabKeys.default()
-    key_file = capture_dir / "keys.json"
-    if not key_file.exists():
-        return keys
-    d = json.loads(key_file.read_text())
+def _peer_from_json(d: dict, side: str, fallback: Peer) -> Peer:
+    mac_key = f"{side}_mac"
+    if mac_key not in d:
+        return fallback
+    mac = bytes.fromhex(d[mac_key].replace(":", ""))
+    mi = bytes.fromhex(d.get(f"{side}_mi", fallback.mi.hex()))
+    prio = int(d.get(f"{side}_ks_priority", fallback.ks_priority))
+    name = d.get(f"{side}_name", fallback.name)
+    return Peer.make(name, mac, fallback.port_id, prio, mi)
+
+
+def _lab_keys_from_json(d: dict, fallback: LabKeys) -> LabKeys:
+    a = _peer_from_json(d, "a", fallback.a)
+    b = _peer_from_json(d, "b", fallback.b)
     return LabKeys(
         cak=bytes.fromhex(d["cak"]),
         ckn=bytes.fromhex(d["ckn"]),
@@ -34,9 +51,32 @@ def _load_keys(capture_dir: Path) -> LabKeys:
         ick=bytes.fromhex(d["ick"]),
         kn=int(d["kn"]),
         an=int(d["an"]),
-        a=keys.a,
-        b=keys.b,
+        a=a,
+        b=b,
+        source=d.get("source", fallback.source),
+        msk=bytes.fromhex(d["msk"]) if d.get("msk") else b"",
+        eap_session_id=bytes.fromhex(d["eap_session_id"]) if d.get("eap_session_id") else b"",
     )
+
+
+def _load_keys(capture_dir: Path) -> LabKeys:
+    keys = LabKeys.default()
+    key_file = capture_dir / "keys.json"
+    if not key_file.exists():
+        return keys
+    d = json.loads(key_file.read_text())
+    return _lab_keys_from_json(d, keys)
+
+
+def _load_eap_keys(capture_dir: Path) -> LabKeys:
+    eap = LabKeys.eap_default()
+    key_file = capture_dir / "keys.json"
+    if not key_file.exists():
+        return eap
+    d = json.loads(key_file.read_text())
+    if "eap" in d and isinstance(d["eap"], dict):
+        return _lab_keys_from_json(d["eap"], eap)
+    return eap
 
 
 def _comments(capture_dir: Path, pcap_name: str) -> list[str]:
@@ -62,6 +102,28 @@ def render_frame(
         heading += f" — {comment}"
     parts = [heading, ""]
     if et == ETHERTYPE_EAPOL:
+        eapol_type = frame[15] if len(frame) > 15 else -1
+        if eapol_type == EAPOL_TYPE_EAP:
+            title, fields, parsed = dissect_eap(frame)
+            parts += [
+                f"**{title}**",
+                "",
+                f"- 方向：`{_mac(parsed['sa'])}` → `{_mac(parsed['da'])}`（{len(frame)} B）",
+                f"- 作用：{comment or 'EAPOL-EAP'}",
+                f"- EAPOL Type = `{parsed['eapol_type']}`（0 = EAP-Packet），EAP Code = `{parsed['eap_code']}`",
+                "",
+                "### 逐字段（相对帧起始偏移）",
+                "",
+                field_table(fields),
+                "",
+                "### 十六进制",
+                "",
+                "```",
+                xxd(frame),
+                "```",
+                "",
+            ]
+            return "\n".join(parts)
         title, fields, parsed = dissect_mka(frame, keys)
         b = parsed["basic"]
         parts += [
@@ -174,15 +236,16 @@ sequenceDiagram
     autonumber
     participant A as node-a KS prio 16
     participant B as node-b prio 32
-    A->>B: MKA MN=1 hello（自称 Key Server）
+    Note over A,B: same CAK / CKN (PSK)
+    A->>B: MKA MN=1 hello (claim Key Server)
     B->>A: MKA MN=1 Potential Peer List
     A->>B: MKA MN=2 Distributed SAK + SAK Use tx
     B->>A: MKA MN=2 SAK Use tx+rx
-    A->>B: MKA MN=3 双方都在用 SAK
+    A->>B: MKA MN=3 both using SAK
     B->>A: MKA MN=3 keepalive
-    A->>B: MACsec ICMP PN=1..3（加密）
-    B->>A: MACsec ICMP PN=1..3（加密）
-    A->>B: MACsec PN=9 ES=1 无 SCI
+    A->>B: MACsec ICMP PN=1..3 (encrypted)
+    B->>A: MACsec ICMP PN=1..3 (encrypted)
+    A->>B: MACsec PN=9 ES=1 no SCI
 ```
 
 分文件报告（同一套解析器）：
@@ -192,6 +255,7 @@ sequenceDiagram
 - [captures/decoded/03-macsec-integrity-only.md](../captures/decoded/03-macsec-integrity-only.md)
 - [captures/decoded/04-ieee-integrity.md](../captures/decoded/04-ieee-integrity.md)
 - [captures/decoded/05-ieee-encrypt.md](../captures/decoded/05-ieee-encrypt.md)
+- [captures/decoded/11-mka-after-eap.md](../captures/decoded/11-mka-after-eap.md) — EAP-Success 之后的 MKA（Authenticator 为 Key Server）
 
 格式与密钥体系背景：[mka-protocol-analysis.md](mka-protocol-analysis.md)、[macsec-protocol-analysis.md](macsec-protocol-analysis.md)。
 
@@ -218,6 +282,7 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         ("macsec-ieee-gcm-aes-128-integrity.pcap", "ieee", "04-ieee-integrity.md"),
         ("macsec-ieee-gcm-aes-128-encrypt.pcap", "ieee", "05-ieee-encrypt.md"),
         ("session-full.pcap", "lab", "06-session-full.md"),
+        ("mka-after-eap.pcap", "eap", "11-mka-after-eap.md"),
     ]
     session_text = ""
     for pcap_name, kind, report_name in jobs:
@@ -227,6 +292,9 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         comments = _comments(capture_dir, pcap_name)
         if kind == "ieee":
             text = analyze_pcap(pcap, keys, comments, sak=IEEE_GCM_KEY_128, sci_a=IEEE_SCI, sci_b=IEEE_SCI)
+        elif kind == "eap":
+            eap_keys = _load_eap_keys(capture_dir)
+            text = analyze_pcap(pcap, eap_keys, comments)
         else:
             text = analyze_pcap(pcap, keys, comments)
         dest = out_dir / report_name
