@@ -19,6 +19,8 @@
   "b_ks_priority": "32",
   "pae_group": "01:80:c2:00:00:03",
   "ckn_ascii": "MACSEC-LAB-CKN01",
+  "sak2": "c1c2c3c4c5c6c7c8c9cacbcccdcecfd0",
+  "sak2_note": "rekey story: KN=2, AN=1",
   "eap": {
     "source": "eap",
     "cak": "9414a9434321fde7334cfd5356542f2c",

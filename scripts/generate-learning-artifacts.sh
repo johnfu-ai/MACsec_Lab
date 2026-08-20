@@ -23,6 +23,8 @@ if command -v tshark >/dev/null 2>&1; then
         > "${DECODE}/10-tshark-ieee-encrypt-verbose.txt" 2>/dev/null || true
     tshark -r captures/mka-after-eap.pcap -Y "eapol or mka" -V \
         > "${DECODE}/12-tshark-mka-after-eap-verbose.txt" 2>/dev/null || true
+    tshark -r captures/mka-rekey.pcap -Y "mka or macsec" -V \
+        > "${DECODE}/13-tshark-mka-rekey-verbose.txt" 2>/dev/null || true
     tshark -r captures/session-full.pcap -q -z io,phs \
         > "${DECODE}/00-protocol-hierarchy.txt" 2>/dev/null || true
 else
@@ -39,7 +41,8 @@ MACsec Lab — decoded learning artifacts
 04-ieee-integrity.md / 05-ieee-encrypt.md  IEEE 官方 GCM 向量
 06-session-full.md                  完整会话 13 帧（与 docs/protocol-analysis.md 同源）
 11-mka-after-eap.md                 EAP-Success 之后的 MKA（Authenticator / Supplicant）
-07–10 tshark                        Wireshark 树（若已安装 tshark）
+13-mka-rekey.md                     SAK 重加密：AN=0 → AN=1 换钥全过程
+07–10, 12–13 tshark                 Wireshark 树（若已安装 tshark）
 
 中文总览（含序列图）：docs/protocol-analysis.md
 EAP vs PSK：docs/mka-protocol-analysis.md

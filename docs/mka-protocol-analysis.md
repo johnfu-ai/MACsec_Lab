@@ -70,6 +70,8 @@ Body length 是 12 bit，占用 octet 3 的低 4 bit + octet 4。Basic 固定部
 
 告诉对端：我是否已用 Latest/Old SAK 发送、接收。会话起来的标志是双方 Latest **tx 且 rx**。KI = Key Server MI ‖ Key Number。
 
+换钥时 Latest/Old 的迁移（latest=新 SA、old=旧 SA 先共存后退役）完整故事见 [lifecycle.md](lifecycle.md) 与 `captures/mka-rekey.pcap`。
+
 ## 3. 密钥派生（9.3 / 6.2.1）
 
 层次图与五个对象对照：[key-hierarchy.md](key-hierarchy.md)。CAK **从不**加密用户帧；SAK **不是**从 CAK 派生的。

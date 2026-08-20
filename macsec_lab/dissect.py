@@ -444,7 +444,7 @@ def dissect_macsec(frame: bytes, sak: bytes, sci_a: bytes, sci_b: bytes) -> tupl
     return title, fields, parsed, inner
 
 
-def one_line(frame: bytes, keys: LabKeys, sci_a: bytes, sci_b: bytes) -> str:
+def one_line(frame: bytes, keys: LabKeys, sci_a: bytes, sci_b: bytes, sak: bytes | None = None) -> str:
     et = int.from_bytes(frame[12:14], "big")
     if et == ETHERTYPE_EAPOL:
         ptype = frame[15] if len(frame) > 15 else -1
@@ -456,12 +456,13 @@ def one_line(frame: bytes, keys: LabKeys, sci_a: bytes, sci_b: bytes) -> str:
         role = "KS" if p["basic"].key_server else "peer"
         return f"MKA MN={p['basic'].actor_mn} {role}: {sets}"
     if et == ETHERTYPE_MACSEC:
-        _, _, p, inner = dissect_macsec(frame, keys.sak, sci_a, sci_b)
+        _, _, p, inner = dissect_macsec(frame, sak if sak is not None else keys.sak, sci_a, sci_b)
         tag = p["tag"]
         seq = ""
         for f in inner:
             if f.name == "ICMP Sequence":
                 seq = f" ICMP seq={f.value}"
                 break
-        return f"MACsec PN={tag.pn} {tag.mode}{seq}"
+        an = f" AN={tag.an}" if tag.an else ""
+        return f"MACsec PN={tag.pn}{an} {tag.mode}{seq}"
     return f"EtherType {et:#06x}"

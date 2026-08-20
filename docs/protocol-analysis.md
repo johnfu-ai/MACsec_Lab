@@ -29,6 +29,7 @@ sequenceDiagram
 - [captures/decoded/04-ieee-integrity.md](../captures/decoded/04-ieee-integrity.md)
 - [captures/decoded/05-ieee-encrypt.md](../captures/decoded/05-ieee-encrypt.md)
 - [captures/decoded/11-mka-after-eap.md](../captures/decoded/11-mka-after-eap.md) — EAP-Success 之后的 MKA（Authenticator 为 Key Server）
+- [captures/decoded/13-mka-rekey.md](../captures/decoded/13-mka-rekey.md) — SAK 重加密：AN=0 → AN=1 换钥全过程（`mka-rekey.pcap`）
 
 格式与密钥体系背景：[mka-protocol-analysis.md](mka-protocol-analysis.md)、[macsec-protocol-analysis.md](macsec-protocol-analysis.md)。
 

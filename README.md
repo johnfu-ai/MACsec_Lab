@@ -95,6 +95,7 @@ make verify      # 测试 + tshark 能否认出 mka / macsec
 - `[captures/decoded/02-macsec-encrypted.md](captures/decoded/02-macsec-encrypted.md)`
 - `[captures/decoded/03-macsec-integrity-only.md](captures/decoded/03-macsec-integrity-only.md)`
 - `[captures/decoded/11-mka-after-eap.md](captures/decoded/11-mka-after-eap.md)` — EAP-Success 之后的 MKA（Authenticator / Supplicant）
+- `[captures/decoded/13-mka-rekey.md](captures/decoded/13-mka-rekey.md)` — SAK 重加密全过程（AN=0 → AN=1 → 旧钥退役）
 
 
 
@@ -105,11 +106,12 @@ make verify      # 测试 + tshark 能否认出 mka / macsec
 | ----------------------------------------- | ------------------------------------------ |
 | `captures/mka-handshake.pcap`             | 6 帧 MKA（PSK CAK）：hello → 选 KS → 分发 SAK → 双方 SAK Use |
 | `captures/mka-after-eap.pcap`             | EAP-Success 之后：Authenticator 为 KS，CAK 从 MSK 派生     |
+| `captures/mka-rekey.pcap`                 | SAK 重加密：AN=0 → AN=1，双 SA 并存 → 旧钥退役（[docs/lifecycle.md](docs/lifecycle.md)） |
 | `captures/macsec-lab-encrypted.pcap`      | 实验室 GCM-AES-128，载荷加密                       |
 | `captures/macsec-lab-integrity-only.pcap` | 同一 ICMP，`E=0 C=0`，内层 IPv4 明文可见             |
 | `captures/macsec-ieee-gcm-aes-128-*.pcap` | IEEE 公布的 GCM 测试向量                          |
 | `captures/session-full.pcap`              | PSK MKA + 加密数据面，一条故事线                      |
-| `captures/keys.json`                      | 演示 PSK CAK 与 EAP 派生 CAK / CKN / SAK / KEK / ICK |
+| `captures/keys.json`                      | 演示 PSK CAK 与 EAP 派生 CAK / CKN / SAK（含重加密 SAK#2）/ KEK / ICK |
 
 
 
@@ -140,6 +142,7 @@ Key Server 随机生成 SAK  →  AES-KW(KEK, SAK) 经 MKA 分发  →  SecY GCM
 详解：
 
 - [docs/key-hierarchy.md](docs/key-hierarchy.md) — CAK / CKN / KEK / ICK / SAK 是什么、怎么生成
+- [docs/lifecycle.md](docs/lifecycle.md) — 换钥（rekey）、AN/KN、PN 耗尽、重放窗口、Delay Protect、判死
 - [docs/protocol-analysis.md](docs/protocol-analysis.md) — **每一条消息的偏移级解析**（session-full）
 - [docs/mka-protocol-analysis.md](docs/mka-protocol-analysis.md) — 含 PSK vs EAP 成功之后
 - [docs/macsec-protocol-analysis.md](docs/macsec-protocol-analysis.md)

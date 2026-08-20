@@ -33,6 +33,7 @@ from macsec_lab.scenario import (
     macsec_lab_data,
     mka_after_eap,
     mka_handshake,
+    mka_rekey,
 )
 
 
@@ -122,6 +123,68 @@ class LabRoundTrip(unittest.TestCase):
             inner_names = [f.name for f in inner]
             self.assertIn("ICMP Sequence", inner_names, comment)
             self.assertIn("IP Src", inner_names, comment)
+
+
+class SakRekey(unittest.TestCase):
+    def test_rekey_distributes_second_sak_on_an1(self) -> None:
+        keys = LabKeys.default()
+        self.assertTrue(keys.sak2)
+        frames = mka_rekey(keys)
+        self.assertEqual(len(frames), 9)
+        saw = []
+        for comment, raw in frames:
+            if int.from_bytes(raw[12:14], "big") != 0x888E:
+                continue
+            p = parse_eapol_mka(raw, keys.ick, keys.kek)
+            self.assertTrue(p["icv_ok"], comment)
+            if p["unwrapped_sak"] is not None:
+                saw.append((p, comment))
+        self.assertEqual(len(saw), 1, "exactly one Distributed SAK in the rekey story")
+        p, comment = saw[0]
+        self.assertEqual(p["unwrapped_sak"], keys.sak2, comment)
+        ds = next(s["body"] for s in p["param_sets"] if s["code"] == 4)
+        self.assertEqual(ds.an, 1)
+        self.assertEqual(ds.kn, 2)
+
+    def test_rekey_data_uses_an_and_pn_per_sa(self) -> None:
+        keys = LabKeys.default()
+        data = [(c, r) for c, r in mka_rekey(keys) if int.from_bytes(r[12:14], "big") == 0x88E5]
+        sak_by_an = {0: keys.sak, 1: keys.sak2}
+        ans = []
+        for comment, raw in data:
+            hint = keys.a.sci if raw[6:12] == keys.a.mac else keys.b.sci
+            p = parse_frame(raw, sak_by_an[raw[14] & 0x03], hint)
+            self.assertTrue(p["icv_ok"], comment)
+            self.assertEqual(p["user_data"][:2], b"\x08\x00", comment)
+            ans.append((p["tag"].an, p["tag"].pn))
+        # Old SA: PN keeps climbing; new SA: PN restarts at 1 with a different key.
+        self.assertEqual(ans[0], (0, 10))
+        self.assertEqual(ans[1], (1, 1))
+        self.assertEqual(ans[2], (1, 1))
+
+    def test_rekey_sak_use_transitions(self) -> None:
+        keys = LabKeys.default()
+        frames = mka_rekey(keys)
+        uses = []
+        for comment, raw in frames:
+            if int.from_bytes(raw[12:14], "big") != 0x888E:
+                continue
+            p = parse_eapol_mka(raw, keys.ick)
+            for s in p["param_sets"]:
+                if s["code"] == 3:
+                    uses.append(s["body"])
+        # steady state: latest AN0 tx+rx, no old SA in use
+        self.assertEqual((uses[0].latest_an, uses[0].latest_tx, uses[0].latest_rx), (0, True, True))
+        self.assertEqual((uses[0].old_tx, uses[0].old_rx, uses[0].old_kn), (False, False, 0))
+        # KS distributes SAK#2 (uses[2] = A MN=5): latest=AN1 tx, still old tx+rx
+        self.assertEqual((uses[2].latest_an, uses[2].latest_tx, uses[2].latest_rx), (1, True, False))
+        self.assertEqual((uses[2].old_an, uses[2].old_tx, uses[2].old_rx, uses[2].old_kn), (0, True, True, 1))
+        # peer installs SAK#2 (uses[3] = B MN=5): latest=AN1 tx+rx
+        self.assertEqual((uses[3].latest_tx, uses[3].latest_rx), (True, True))
+        # KS stops transmitting on old SA (uses[4] = A MN=6): old rx-only drain
+        self.assertEqual((uses[4].old_tx, uses[4].old_rx), (False, True))
+        # final keepalive: old SA fully retired
+        self.assertEqual((uses[-1].old_tx, uses[-1].old_rx, uses[-1].old_kn), (False, False, 0))
 
 
 class MermaidLabels(unittest.TestCase):

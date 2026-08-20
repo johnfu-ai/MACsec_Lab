@@ -56,6 +56,7 @@ def _lab_keys_from_json(d: dict, fallback: LabKeys) -> LabKeys:
         source=d.get("source", fallback.source),
         msk=bytes.fromhex(d["msk"]) if d.get("msk") else b"",
         eap_session_id=bytes.fromhex(d["eap_session_id"]) if d.get("eap_session_id") else b"",
+        sak2=bytes.fromhex(d["sak2"]) if d.get("sak2") else b"",
     )
 
 
@@ -190,6 +191,13 @@ def render_frame(
     return "\n".join(parts + [f"未知 EtherType `{et:#06x}`", ""])
 
 
+def _sak_for_frame(frame: bytes, sak: bytes, sak_by_an: dict[int, bytes] | None) -> bytes:
+    """Pick the SAK by the frame's AN when a per-AN map is given (rekey story)."""
+    if not sak_by_an or len(frame) < 15 or int.from_bytes(frame[12:14], "big") != ETHERTYPE_MACSEC:
+        return sak
+    return sak_by_an.get(frame[14] & 0x03, sak)
+
+
 def analyze_pcap(
     path: Path,
     keys: LabKeys,
@@ -197,6 +205,7 @@ def analyze_pcap(
     sak: bytes | None = None,
     sci_a: bytes | None = None,
     sci_b: bytes | None = None,
+    sak_by_an: dict[int, bytes] | None = None,
 ) -> str:
     sak = sak if sak is not None else keys.sak
     sci_a = sci_a if sci_a is not None else keys.a.sci
@@ -207,10 +216,11 @@ def analyze_pcap(
     for i, pkt in enumerate(pkts, 1):
         comment = comments[i - 1] if i - 1 < len(comments) else ""
         sa, da = _mac(pkt.data[6:12]), _mac(pkt.data[0:6])
+        frame_sak = _sak_for_frame(pkt.data, sak, sak_by_an)
         summary_rows.append(
-            f"| {i} | {len(pkt.data)} | `{sa}` → `{da}` | {comment or one_line(pkt.data, keys, sci_a, sci_b)} |"
+            f"| {i} | {len(pkt.data)} | `{sa}` → `{da}` | {comment or one_line(pkt.data, keys, sci_a, sci_b, frame_sak)} |"
         )
-        bodies.append(render_frame(i, pkt.data, keys, comment, sak, sci_a, sci_b))
+        bodies.append(render_frame(i, pkt.data, keys, comment, frame_sak, sci_a, sci_b))
     header = [
         f"# 逐帧解析 — `{path.name}`",
         "",
@@ -256,6 +266,7 @@ sequenceDiagram
 - [captures/decoded/04-ieee-integrity.md](../captures/decoded/04-ieee-integrity.md)
 - [captures/decoded/05-ieee-encrypt.md](../captures/decoded/05-ieee-encrypt.md)
 - [captures/decoded/11-mka-after-eap.md](../captures/decoded/11-mka-after-eap.md) — EAP-Success 之后的 MKA（Authenticator 为 Key Server）
+- [captures/decoded/13-mka-rekey.md](../captures/decoded/13-mka-rekey.md) — SAK 重加密：AN=0 → AN=1 换钥全过程（`mka-rekey.pcap`）
 
 格式与密钥体系背景：[mka-protocol-analysis.md](mka-protocol-analysis.md)、[macsec-protocol-analysis.md](macsec-protocol-analysis.md)。
 
@@ -283,6 +294,7 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         ("macsec-ieee-gcm-aes-128-encrypt.pcap", "ieee", "05-ieee-encrypt.md"),
         ("session-full.pcap", "lab", "06-session-full.md"),
         ("mka-after-eap.pcap", "eap", "11-mka-after-eap.md"),
+        ("mka-rekey.pcap", "rekey", "13-mka-rekey.md"),
     ]
     session_text = ""
     for pcap_name, kind, report_name in jobs:
@@ -295,6 +307,9 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         elif kind == "eap":
             eap_keys = _load_eap_keys(capture_dir)
             text = analyze_pcap(pcap, eap_keys, comments)
+        elif kind == "rekey":
+            # Data frames carry AN=0 (SAK#1) and AN=1 (SAK#2); pick the key per frame.
+            text = analyze_pcap(pcap, keys, comments, sak_by_an={0: keys.sak, 1: keys.sak2})
         else:
             text = analyze_pcap(pcap, keys, comments)
         dest = out_dir / report_name

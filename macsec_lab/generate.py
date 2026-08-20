@@ -13,6 +13,7 @@ from .scenario import (
     macsec_lab_data,
     mka_after_eap,
     mka_handshake,
+    mka_rekey,
 )
 
 
@@ -33,6 +34,7 @@ def generate(out_dir: Path) -> dict[str, Path]:
 
     mka = mka_handshake(keys)
     eap_mka = mka_after_eap(eap_keys)
+    rekey = mka_rekey(keys)
     enc = macsec_lab_data(keys, encrypt=True)
     integ = macsec_lab_data(keys, encrypt=False)
     ieee_i = [("IEEE GCM-AES-128 integrity-only test vector", ieee_integrity_frame())]
@@ -42,6 +44,7 @@ def generate(out_dir: Path) -> dict[str, Path]:
     mapping = {
         "mka-handshake.pcap": mka,
         "mka-after-eap.pcap": eap_mka,
+        "mka-rekey.pcap": rekey,
         "macsec-lab-encrypted.pcap": enc,
         "macsec-lab-integrity-only.pcap": integ,
         "macsec-ieee-gcm-aes-128-integrity.pcap": ieee_i,
