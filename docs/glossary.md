@@ -14,6 +14,7 @@
 | **SecY** | MAC Security Entity (data plane) |
 | **KaY** | Key Agreement Entity (MKA state machine) |
 | **SecTAG** | `0x88E5` + TCI/AN + SL + PN + optional SCI |
+| **Confidentiality Offset (co)** | 0/30/50 octets of User Data authenticated but sent in clear; signaled in Distributed SAK, not SecTAG |
 | **PN** | Packet Number, GCM nonce half, replay protection |
 | **MKPDU** | MKA protocol data unit inside EAPOL type 5 |
 | **MI / MN** | 12-octet Member Identifier / Message Number |

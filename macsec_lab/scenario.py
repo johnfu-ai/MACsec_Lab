@@ -286,6 +286,61 @@ def mka_rekey(keys: LabKeys) -> list[tuple[str, bytes]]:
     return frames
 
 
+def mka_co30(keys: LabKeys) -> list[tuple[str, bytes]]:
+    """Confidentiality-offset story: KS hands out SAK#3 with co=30 (AN=2, KN=3).
+
+    With offset 30 the first 30 octets of User Data (inner EtherType + IPv4
+    header + 8 octets of L4 header) are authenticated but travel in clear;
+    GCM encrypts only the remainder. The offset is signaled in the
+    Distributed SAK parameter set (code 1 = 30), never in the SecTAG.
+    Requires LabKeys.sak3.
+    """
+    if not keys.sak3:
+        raise ValueError("mka_co30 needs LabKeys.sak3")
+    a, b = keys.a, keys.b
+    keys3 = replace(keys, sak=keys.sak3, kn=3, an=2)
+    wrapped3 = wrap_sak(keys.kek, keys.sak3)
+    frames: list[tuple[str, bytes]] = []
+
+    frames.append((
+        "A MN=8: Distributed SAK#3 with confidentiality offset code 1 (=30 octets, AN=2 KN=3)",
+        build_mkpdu_frame(
+            sa=a.mac,
+            ick=keys.ick,
+            basic=_basic(a, keys, 8, True),
+            param_sets=[
+                DistributedSak(an=keys3.an, confidentiality_offset=1, kn=keys3.kn, wrapped_sak=wrapped3),
+                PeerList(1, [PeerTuple(b.mi, 7)]),
+                _sak_use((2, True, False), a.mi, 3, 1),
+            ],
+        ),
+    ))
+    for src, dst, src_ip, dst_ip, sci in [
+        (a, b, "10.10.0.10", "10.10.0.20", a.sci),
+        (b, a, "10.10.0.20", "10.10.0.10", b.sci),
+    ]:
+        user = ipv4_icmp_echo(src_ip, dst_ip, ident=0x4242, seq=12)
+        tag = SecTAG.build(pn=1, an=keys3.an, encrypt=True, sci=sci)
+        frames.append((
+            f"{'A→B' if src is a else 'B→A'} data PN=1 AN=2 co=30 with SAK#3 — inner EtherType+IPv4+8 "
+            "octets travel in clear (still ICV-protected), only the payload is encrypted",
+            protect_frame(dst.mac, src.mac, user, keys3.sak, tag, sci, confidentiality_offset=30),
+        ))
+    frames.append((
+        "B MN=8 keepalive: SAK Use latest=AN2 tx+rx (installed SAK#3)",
+        build_mkpdu_frame(
+            sa=b.mac,
+            ick=keys.ick,
+            basic=_basic(b, keys, 8, False),
+            param_sets=[
+                PeerList(1, [PeerTuple(a.mi, 8)]),
+                _sak_use((2, True, True), a.mi, 3, 1),
+            ],
+        ),
+    ))
+    return frames
+
+
 def macsec_lab_data(keys: LabKeys, encrypt: bool) -> list[tuple[str, bytes]]:
     a, b = keys.a, keys.b
     frames: list[tuple[str, bytes]] = []

@@ -70,7 +70,31 @@ IV **永远**用完整 8 字节 SCI，即使线上没带。
 - P = User Data
 - Secure Data = C
 
+**机密性 + Confidentiality Offset 30/50（E=1,C=1，co≠0）**
+
+- A = DA ‖ SA ‖ SecTAG ‖ User[0:co]
+- P = User[co:]
+- Secure Data = User[0:co] ‖ C
+
 User Data = 原帧的 EtherType + 载荷（不含外层 DA/SA）。实验室里是 `08 00` + IPv4 ICMP。
+
+## 4b. Confidentiality Offset（0/30/50）
+
+不是所有网络都能接受"整个载荷都加密"。运营商转发路径常要读内层 IP 头做 ECMP/哈希均衡，这时用 **confidentiality offset**：前 co 字节**只认证、不加密**，在抓包里直接可见：
+
+| co | 明文部分（User Data 起） | 为什么是这个长度 |
+|---|---|---|
+| 0 | 无（默认，全加密） | — |
+| **30** | 内层 EtherType(2) + IPv4 头(20) + L4 头前 8 字节 | 恰好暴露 IP 地址 + TCP/UDP 端口，供转发设备做哈希 |
+| **50** | 上面 30 + 再 20 字节 | 留给一层隧道/多协议标签头 |
+
+三个要点（对照 `captures/mka-co30.pcap`，逐帧见 [captures/decoded/14-mka-co30.md](../captures/decoded/14-mka-co30.md)）：
+
+1. **co 不在 SecTAG 里**。它随 SAK 一起由 MKA 的 **Distributed SAK** 参数集分发（2 bit 编码：0→0、1→30、2→50）。所以抓包软件只看 0x88E5 帧本身**无法**知道前 30 字节是明文——必须跟过 MKA。Wireshark 里能看到 `mka.confidentiality_offset` 字段。
+2. 明文前缀**仍受 ICV 保护**：它在 AAD 里。改一个字节 → GCM 验证失败（`14-mka-co30.md` 帧 2 的 AAD 行是 `DA‖SA‖SecTAG‖User[0:30]`）。
+3. 用 offset 的 SA 和不用 offset 的 SA 不能是同一把钥匙同一 AN——换 co 等于换一把 SAK（实验室给了 SAK#3 / AN=2）。
+
+为什么运营商要它：ECMP/LAG 哈希通常取 IP 五元组；全加密时设备只能靠外层 DA/SA（同一条链路上全部相同）做哈希，流量会失衡。co=30 让哈希字段留在明文里，代价是**泄露了流量的五元组元数据**——安全的权衡，不是免费的。
 
 ## 5. 对照 IEEE 公布向量
 

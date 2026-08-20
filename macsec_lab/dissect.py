@@ -30,6 +30,9 @@ CAP_NAMES = {
     3: "完整性+机密性，offset 0/30/50",
 }
 
+# Distributed SAK confidentiality-offset code -> octets left in clear
+CO_CODES = {0: 0, 1: 30, 2: 50}
+
 ICMP_TYPES = {0: "Echo Reply", 8: "Echo Request", 3: "Destination Unreachable"}
 
 
@@ -287,7 +290,8 @@ def dissect_mka(frame: bytes, keys: LabKeys) -> tuple[str, list[Field], dict]:
                 1,
                 "AN + Conf. offset",
                 f"{chunk[1]:#04x}",
-                f"AN={obj.an} offset_code={obj.confidentiality_offset} (0→0 字节)",
+                f"AN={obj.an} offset_code={obj.confidentiality_offset} "
+                f"(→前 {CO_CODES.get(obj.confidentiality_offset, '?')} 字节不加密)",
             )
             _add(fields, frame, abs_off + 2, 2, "Body length", str(_read_body_len(chunk, 2)), "28 = 默认 GCM-AES-128")
             _add(fields, frame, abs_off + 4, 4, "Key Number", str(obj.kn), "本把 SAK 的编号")
@@ -370,12 +374,18 @@ def dissect_eap(frame: bytes) -> tuple[str, list[Field], dict]:
     return title, fields, parsed
 
 
-def dissect_macsec(frame: bytes, sak: bytes, sci_a: bytes, sci_b: bytes) -> tuple[str, list[Field], dict, list[Field]]:
+def dissect_macsec(
+    frame: bytes,
+    sak: bytes,
+    sci_a: bytes,
+    sci_b: bytes,
+    confidentiality_offset: int = 0,
+) -> tuple[str, list[Field], dict, list[Field]]:
     parsed = None
     last_err = None
     for hint in (None, sci_a, sci_b):
         try:
-            parsed = parse_frame(frame, sak, hint)
+            parsed = parse_frame(frame, sak, hint, confidentiality_offset)
             if parsed["icv_ok"] is False:
                 continue
             break
@@ -405,15 +415,36 @@ def dissect_macsec(frame: bytes, sak: bytes, sci_a: bytes, sci_b: bytes) -> tupl
             )
         )
     sec_len = len(parsed["secure_data"])
-    _add(
-        fields,
-        frame,
-        hdr,
-        sec_len,
-        "Secure Data",
-        _hx(parsed["secure_data"]),
-        "密文" if tag.e else "明文 User Data（仅完整性）",
-    )
+    co = parsed["confidentiality_offset"]
+    if tag.e and co:
+        _add(
+            fields,
+            frame,
+            hdr,
+            co,
+            "Secure Data 明文前缀",
+            _hx(parsed["secure_data"][:co]),
+            f"confidentiality offset {co}：内层 EtherType+IP(+L4 头) 只认证、不加密",
+        )
+        _add(
+            fields,
+            frame,
+            hdr + co,
+            sec_len - co,
+            "Secure Data 密文",
+            _hx(parsed["secure_data"][co:]),
+            f"User Data 第 {co} 字节起才是 GCM 明文 P",
+        )
+    else:
+        _add(
+            fields,
+            frame,
+            hdr,
+            sec_len,
+            "Secure Data",
+            _hx(parsed["secure_data"]),
+            "密文" if tag.e else "明文 User Data（仅完整性）",
+        )
     _add(
         fields,
         frame,
@@ -434,17 +465,28 @@ def dissect_macsec(frame: bytes, sak: bytes, sci_a: bytes, sci_b: bytes) -> tupl
     sci = parsed["sci"]
     iv = sci + tag.pn.to_bytes(4, "big")
     parsed["iv"] = iv
-    parsed["aad_desc"] = (
-        "DA‖SA‖SecTAG‖User Data（P 为空）" if not tag.e else "DA‖SA‖SecTAG（P = User Data）"
-    )
+    if not tag.e:
+        parsed["aad_desc"] = "DA‖SA‖SecTAG‖User Data（P 为空）"
+    elif co:
+        parsed["aad_desc"] = f"DA‖SA‖SecTAG‖User[0:{co}]（P = User[{co}:]）"
+    else:
+        parsed["aad_desc"] = "DA‖SA‖SecTAG（P = User Data）"
+    co_txt = f"  co={co}" if co else ""
     title = (
-        f"MACsec  PN={tag.pn}  {tag.mode}  "
+        f"MACsec  PN={tag.pn}  {tag.mode}{co_txt}  "
         f"{'SC=1' if tag.sc else 'ES=1 无 SCI'}  ICV={'OK' if parsed['icv_ok'] else 'FAIL'}"
     )
     return title, fields, parsed, inner
 
 
-def one_line(frame: bytes, keys: LabKeys, sci_a: bytes, sci_b: bytes, sak: bytes | None = None) -> str:
+def one_line(
+    frame: bytes,
+    keys: LabKeys,
+    sci_a: bytes,
+    sci_b: bytes,
+    sak: bytes | None = None,
+    confidentiality_offset: int = 0,
+) -> str:
     et = int.from_bytes(frame[12:14], "big")
     if et == ETHERTYPE_EAPOL:
         ptype = frame[15] if len(frame) > 15 else -1
@@ -456,7 +498,9 @@ def one_line(frame: bytes, keys: LabKeys, sci_a: bytes, sci_b: bytes, sak: bytes
         role = "KS" if p["basic"].key_server else "peer"
         return f"MKA MN={p['basic'].actor_mn} {role}: {sets}"
     if et == ETHERTYPE_MACSEC:
-        _, _, p, inner = dissect_macsec(frame, sak if sak is not None else keys.sak, sci_a, sci_b)
+        _, _, p, inner = dissect_macsec(
+            frame, sak if sak is not None else keys.sak, sci_a, sci_b, confidentiality_offset
+        )
         tag = p["tag"]
         seq = ""
         for f in inner:
@@ -464,5 +508,6 @@ def one_line(frame: bytes, keys: LabKeys, sci_a: bytes, sci_b: bytes, sak: bytes
                 seq = f" ICMP seq={f.value}"
                 break
         an = f" AN={tag.an}" if tag.an else ""
-        return f"MACsec PN={tag.pn}{an} {tag.mode}{seq}"
+        co = f" co={confidentiality_offset}" if confidentiality_offset else ""
+        return f"MACsec PN={tag.pn}{an}{co} {tag.mode}{seq}"
     return f"EtherType {et:#06x}"

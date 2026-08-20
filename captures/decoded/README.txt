@@ -8,7 +8,8 @@ MACsec Lab — decoded learning artifacts
 06-session-full.md                  完整会话 13 帧（与 docs/protocol-analysis.md 同源）
 11-mka-after-eap.md                 EAP-Success 之后的 MKA（Authenticator / Supplicant）
 13-mka-rekey.md                     SAK 重加密：AN=0 → AN=1 换钥全过程
-07–10, 12–13 tshark                 Wireshark 树（若已安装 tshark）
+14-mka-co30.md                      Confidentiality Offset 30：内层 IP 头明文可见
+07–10, 12–14 tshark                 Wireshark 树（若已安装 tshark）
 
 中文总览（含序列图）：docs/protocol-analysis.md
 EAP vs PSK：docs/mka-protocol-analysis.md

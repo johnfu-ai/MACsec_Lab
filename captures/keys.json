@@ -21,6 +21,8 @@
   "ckn_ascii": "MACSEC-LAB-CKN01",
   "sak2": "c1c2c3c4c5c6c7c8c9cacbcccdcecfd0",
   "sak2_note": "rekey story: KN=2, AN=1",
+  "sak3": "d1d2d3d4d5d6d7d8d9dadbdcdddedfe0",
+  "sak3_note": "co30 story: KN=3, AN=2, confidentiality offset 30",
   "eap": {
     "source": "eap",
     "cak": "9414a9434321fde7334cfd5356542f2c",

@@ -116,6 +116,18 @@ def short_length(user_data_len: int) -> int:
     return user_data_len if user_data_len < 48 else 0
 
 
+# 802.1AE: only these offsets may be signaled (codes 0/1/2 in Distributed SAK)
+CONFIDENTIALITY_OFFSETS = (0, 30, 50)
+
+
+def check_confidentiality_offset(co: int, user_data: bytes) -> int:
+    if co not in CONFIDENTIALITY_OFFSETS:
+        raise ValueError(f"confidentiality offset must be one of {CONFIDENTIALITY_OFFSETS}, got {co}")
+    if co and len(user_data) < co:
+        raise ValueError(f"user data shorter than offset ({len(user_data)} < {co})")
+    return co
+
+
 def infer_sci(sa: bytes, tag: SecTAG, fallback: bytes | None = None) -> bytes:
     if tag.sci is not None:
         return tag.sci
@@ -135,18 +147,27 @@ def protect_frame(
     sak: bytes,
     tag: SecTAG,
     sci_for_iv: bytes,
+    confidentiality_offset: int = 0,
 ) -> bytes:
     """Build a complete Ethernet MACsec frame (no FCS).
 
     user_data is the original EtherType + payload (the MSDU after DA/SA).
+
+    With a confidentiality offset (802.1AE 9.9, one of 0/30/50), the first
+    `confidentiality_offset` octets of User Data are authenticated but sent
+    in clear; GCM encrypts only the remainder:
+        A = DA || SA || SecTAG || User[0:co]   P = User[co:]
+    The offset is signaled in the MKA Distributed SAK parameter set, not in
+    the SecTAG, so the receiver must know it from MKA context.
     """
+    co = check_confidentiality_offset(confidentiality_offset, user_data) if tag.e else 0
     tag.sl = short_length(len(user_data))
     sectag = tag.pack_with_ethertype()
     iv = sci_for_iv + tag.pn.to_bytes(4, "big")
     if tag.e:
-        aad = da + sa + sectag
-        ciphertext, icv = gcm_protect(sak, iv, aad, user_data)
-        secure = ciphertext
+        aad = da + sa + sectag + user_data[:co]
+        ciphertext, icv = gcm_protect(sak, iv, aad, user_data[co:])
+        secure = user_data[:co] + ciphertext
     else:
         aad = da + sa + sectag + user_data
         _, icv = gcm_protect(sak, iv, aad, b"")
@@ -154,7 +175,12 @@ def protect_frame(
     return da + sa + sectag + secure + icv
 
 
-def parse_frame(frame: bytes, sak: bytes | None = None, sci_hint: bytes | None = None) -> dict:
+def parse_frame(
+    frame: bytes,
+    sak: bytes | None = None,
+    sci_hint: bytes | None = None,
+    confidentiality_offset: int = 0,
+) -> dict:
     if len(frame) < 14 + 6 + 16:
         raise ValueError("frame too short for MACsec")
     da, sa = frame[0:6], frame[6:12]
@@ -178,17 +204,20 @@ def parse_frame(frame: bytes, sak: bytes | None = None, sci_hint: bytes | None =
         "icv": icv,
         "user_data": None,
         "icv_ok": None,
+        "confidentiality_offset": 0 if not tag.e else confidentiality_offset,
     }
     if sak is None:
         if not tag.e:
             result["user_data"] = secure
         return result
+    co = confidentiality_offset if tag.e else 0
     iv = sci + tag.pn.to_bytes(4, "big")
     sectag = tag.pack_with_ethertype()
     try:
         if tag.e:
-            aad = da + sa + sectag
-            result["user_data"] = gcm_validate(sak, iv, aad, secure, icv)
+            clear = secure[:co]
+            aad = da + sa + sectag + clear
+            result["user_data"] = clear + gcm_validate(sak, iv, aad, secure[co:], icv)
         else:
             aad = da + sa + sectag + secure
             gcm_validate(sak, iv, aad, b"", icv)

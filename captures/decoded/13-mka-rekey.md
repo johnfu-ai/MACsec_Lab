@@ -224,7 +224,7 @@
 | 46 | 4 | `0080c201` | Algorithm Agility | `0080c201` | 00-80-C2-01 = 802.1X-2010 AES-CMAC |
 | 50 | 16 | `4d41435345432d4c41422d434b4e3031` | CKN | `4d41435345432d4c41422d434b4e3031` | ASCII 'MACSEC-LAB-CKN01'，两端必须一致 |
 | 66 | 1 | `04` | Param type | `4` | Distributed SAK |
-| 67 | 1 | `40` | AN + Conf. offset | `0x40` | AN=1 offset_code=0 (0→0 字节) |
+| 67 | 1 | `40` | AN + Conf. offset | `0x40` | AN=1 offset_code=0 (→前 0 字节不加密) |
 | 68 | 2 | `001c` | Body length | `28` | 28 = 默认 GCM-AES-128 |
 | 70 | 4 | `00000002` | Key Number | `2` | 本把 SAK 的编号 |
 | 74 | 24 | `8f150985f8b603f1249387d26283ef50c46b5c8ba42b141f` | AES-KW(SAK) | `8f150985f8b603f1249387d26283ef50c46b5c8ba42b141f` | AES-KeyWrap(KEK, SAK)，24 B = 16 B SAK + 8 B wrap IV；解开 = c1c2c3c4c5c6c7c8c9cacbcccdcecfd0 |

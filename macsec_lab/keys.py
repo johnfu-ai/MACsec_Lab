@@ -94,6 +94,8 @@ class LabKeys:
     eap_session_id: bytes = b""
     # Second SAK for the rekey story (KN=2, AN=1); empty when not used.
     sak2: bytes = b""
+    # Third SAK for the confidentiality-offset story (KN=3, AN=2, co=30).
+    sak3: bytes = b""
 
     @classmethod
     def default(cls) -> "LabKeys":
@@ -126,6 +128,7 @@ class LabKeys:
             b=b,
             source="psk",
             sak2=_h("c1c2c3c4c5c6c7c8c9cacbcccdcecfd0"),
+            sak3=_h("d1d2d3d4d5d6d7d8d9dadbdcdddedfe0"),
         )
 
     @classmethod
@@ -205,4 +208,7 @@ class LabKeys:
         if self.sak2:
             out["sak2"] = self.sak2.hex()
             out["sak2_note"] = "rekey story: KN=2, AN=1"
+        if self.sak3:
+            out["sak3"] = self.sak3.hex()
+            out["sak3_note"] = "co30 story: KN=3, AN=2, confidentiality offset 30"
         return out

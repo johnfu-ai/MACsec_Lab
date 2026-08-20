@@ -24,6 +24,7 @@ from macsec_lab.keys import (
     IEEE_SCI,
     LabKeys,
 )
+from macsec_lab.l3 import ipv4_icmp_echo
 from macsec_lab.macsec import SecTAG, parse_frame, protect_frame
 from macsec_lab.dissect import dissect_eap, dissect_macsec, dissect_mka
 from macsec_lab.mka import parse_eapol_mka
@@ -32,6 +33,7 @@ from macsec_lab.scenario import (
     ieee_integrity_frame,
     macsec_lab_data,
     mka_after_eap,
+    mka_co30,
     mka_handshake,
     mka_rekey,
 )
@@ -185,6 +187,58 @@ class SakRekey(unittest.TestCase):
         self.assertEqual((uses[4].old_tx, uses[4].old_rx), (False, True))
         # final keepalive: old SA fully retired
         self.assertEqual((uses[-1].old_tx, uses[-1].old_rx, uses[-1].old_kn), (False, False, 0))
+
+
+class ConfidentialityOffset(unittest.TestCase):
+    def test_co30_roundtrip_clear_prefix_still_authenticated(self) -> None:
+        keys = LabKeys.default()
+        user = ipv4_icmp_echo("10.10.0.10", "10.10.0.20", ident=0x4242, seq=12)
+        tag = SecTAG.build(pn=1, an=2, encrypt=True, sci=keys.a.sci)
+        frame = protect_frame(
+            keys.b.mac, keys.a.mac, user, keys.sak3, tag, keys.a.sci, confidentiality_offset=30
+        )
+        secure = frame[14 + 14 : -16]  # DA+SA+0x88E5+SecTAG(SC=1) then Secure Data
+        # First 30 octets of User Data (EtherType+IPv4+8) travel in clear
+        self.assertEqual(secure[:30], user[:30])
+        self.assertIn(bytes([10, 10, 0, 10]), secure[:30], "inner source IP must be visible")
+        # Only the tail is ciphertext
+        self.assertNotEqual(secure[30:], user[30:])
+        # Receiver must know the offset from MKA: with it, ICV+decrypt succeed
+        p = parse_frame(frame, keys.sak3, confidentiality_offset=30)
+        self.assertTrue(p["icv_ok"])
+        self.assertEqual(p["user_data"], user)
+        # Without the offset the same SAK cannot validate the frame
+        p0 = parse_frame(frame, keys.sak3)
+        self.assertFalse(p0["icv_ok"])
+        # Tampering the clear prefix still breaks the ICV (it is in the AAD)
+        tampered = bytearray(frame)
+        tampered[14 + 14 + 25] ^= 0xFF
+        self.assertFalse(parse_frame(bytes(tampered), keys.sak3, confidentiality_offset=30)["icv_ok"])
+
+    def test_co30_story(self) -> None:
+        keys = LabKeys.default()
+        frames = mka_co30(keys)
+        self.assertEqual(len(frames), 4)
+        # Distributed SAK signals offset code 1 (=30 octets) on AN=2/KN=3
+        p = parse_eapol_mka(frames[0][1], keys.ick, keys.kek)
+        self.assertTrue(p["icv_ok"], frames[0][0])
+        ds = next(s["body"] for s in p["param_sets"] if s["code"] == 4)
+        self.assertEqual(ds.confidentiality_offset, 1)
+        self.assertEqual((ds.an, ds.kn), (2, 3))
+        self.assertEqual(p["unwrapped_sak"], keys.sak3)
+        # Data frames decrypt with SAK#3 + co=30
+        for comment, raw in frames[1:3]:
+            hint = keys.a.sci if raw[6:12] == keys.a.mac else keys.b.sci
+            q = parse_frame(raw, keys.sak3, hint, confidentiality_offset=30)
+            self.assertTrue(q["icv_ok"], comment)
+            self.assertEqual(q["user_data"], user_of(raw, keys))
+
+
+def user_of(raw: bytes, keys: LabKeys) -> bytes:
+    """Rebuild the ICMP user data a co30 data frame should decrypt to."""
+    src_ip = "10.10.0.10" if raw[6:12] == keys.a.mac else "10.10.0.20"
+    dst_ip = "10.10.0.20" if raw[6:12] == keys.a.mac else "10.10.0.10"
+    return ipv4_icmp_echo(src_ip, dst_ip, ident=0x4242, seq=12)
 
 
 class MermaidLabels(unittest.TestCase):

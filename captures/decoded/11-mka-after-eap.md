@@ -160,7 +160,7 @@
 | 46 | 4 | `0080c201` | Algorithm Agility | `0080c201` | 00-80-C2-01 = 802.1X-2010 AES-CMAC |
 | 50 | 16 | `3a4c35b14d5ffb90dd69687cf15fac47` | CKN | `3a4c35b14d5ffb90dd69687cf15fac47` | EAP-derived CKN (KDF); both sides must match |
 | 66 | 1 | `04` | Param type | `4` | Distributed SAK |
-| 67 | 1 | `00` | AN + Conf. offset | `0x00` | AN=0 offset_code=0 (0→0 字节) |
+| 67 | 1 | `00` | AN + Conf. offset | `0x00` | AN=0 offset_code=0 (→前 0 字节不加密) |
 | 68 | 2 | `001c` | Body length | `28` | 28 = 默认 GCM-AES-128 |
 | 70 | 4 | `00000001` | Key Number | `1` | 本把 SAK 的编号 |
 | 74 | 24 | `ea420ced1f518e6eb7c2c4ecd6d29360b4122cde79692275` | AES-KW(SAK) | `ea420ced1f518e6eb7c2c4ecd6d29360b4122cde79692275` | AES-KeyWrap(KEK, SAK)，24 B = 16 B SAK + 8 B wrap IV；解开 = b1b2b3b4b5b6b7b8b9babbbcbdbebfc0 |

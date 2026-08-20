@@ -57,6 +57,7 @@ def _lab_keys_from_json(d: dict, fallback: LabKeys) -> LabKeys:
         msk=bytes.fromhex(d["msk"]) if d.get("msk") else b"",
         eap_session_id=bytes.fromhex(d["eap_session_id"]) if d.get("eap_session_id") else b"",
         sak2=bytes.fromhex(d["sak2"]) if d.get("sak2") else b"",
+        sak3=bytes.fromhex(d["sak3"]) if d.get("sak3") else b"",
     )
 
 
@@ -96,6 +97,7 @@ def render_frame(
     sak: bytes,
     sci_a: bytes,
     sci_b: bytes,
+    confidentiality_offset: int = 0,
 ) -> str:
     et = int.from_bytes(frame[12:14], "big")
     heading = f"## 帧 {n}"
@@ -148,14 +150,15 @@ def render_frame(
         ]
         return "\n".join(parts)
     if et == ETHERTYPE_MACSEC:
-        title, fields, parsed, inner = dissect_macsec(frame, sak, sci_a, sci_b)
+        title, fields, parsed, inner = dissect_macsec(frame, sak, sci_a, sci_b, confidentiality_offset)
         tag = parsed["tag"]
+        mode_line = f"{tag.mode}" + (f"（confidentiality offset {confidentiality_offset}，前 {confidentiality_offset} 字节明文）" if confidentiality_offset and tag.e else "")
         parts += [
             f"**{title}**",
             "",
             f"- 方向：`{_mac(parsed['sa'])}` → `{_mac(parsed['da'])}`（{len(frame)} B）",
             f"- 作用：{comment or 'MACsec 用户帧'}",
-            f"- TCI `{tag.tci:#04x}`：{tag.mode}；PN = `{tag.pn}`；SCI = `{parsed['sci'].hex()}`",
+            f"- TCI `{tag.tci:#04x}`：{mode_line}；PN = `{tag.pn}`；SCI = `{parsed['sci'].hex()}`",
             f"- GCM IV = SCI‖PN = `{parsed['iv'].hex()}`",
             f"- AAD = {parsed['aad_desc']}",
             f"- ICV 校验 = `{parsed['icv_ok']}`",
@@ -206,6 +209,7 @@ def analyze_pcap(
     sci_a: bytes | None = None,
     sci_b: bytes | None = None,
     sak_by_an: dict[int, bytes] | None = None,
+    confidentiality_offset: int = 0,
 ) -> str:
     sak = sak if sak is not None else keys.sak
     sci_a = sci_a if sci_a is not None else keys.a.sci
@@ -218,9 +222,12 @@ def analyze_pcap(
         sa, da = _mac(pkt.data[6:12]), _mac(pkt.data[0:6])
         frame_sak = _sak_for_frame(pkt.data, sak, sak_by_an)
         summary_rows.append(
-            f"| {i} | {len(pkt.data)} | `{sa}` → `{da}` | {comment or one_line(pkt.data, keys, sci_a, sci_b, frame_sak)} |"
+            f"| {i} | {len(pkt.data)} | `{sa}` → `{da}` | "
+            f"{comment or one_line(pkt.data, keys, sci_a, sci_b, frame_sak, confidentiality_offset)} |"
         )
-        bodies.append(render_frame(i, pkt.data, keys, comment, frame_sak, sci_a, sci_b))
+        bodies.append(
+            render_frame(i, pkt.data, keys, comment, frame_sak, sci_a, sci_b, confidentiality_offset)
+        )
     header = [
         f"# 逐帧解析 — `{path.name}`",
         "",
@@ -295,6 +302,7 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         ("session-full.pcap", "lab", "06-session-full.md"),
         ("mka-after-eap.pcap", "eap", "11-mka-after-eap.md"),
         ("mka-rekey.pcap", "rekey", "13-mka-rekey.md"),
+        ("mka-co30.pcap", "co30", "14-mka-co30.md"),
     ]
     session_text = ""
     for pcap_name, kind, report_name in jobs:
@@ -310,6 +318,11 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         elif kind == "rekey":
             # Data frames carry AN=0 (SAK#1) and AN=1 (SAK#2); pick the key per frame.
             text = analyze_pcap(pcap, keys, comments, sak_by_an={0: keys.sak, 1: keys.sak2})
+        elif kind == "co30":
+            # SAK#3 on AN=2 with confidentiality offset 30 (inner EtherType+IP+L4 in clear).
+            text = analyze_pcap(
+                pcap, keys, comments, sak_by_an={2: keys.sak3}, confidentiality_offset=30
+            )
         else:
             text = analyze_pcap(pcap, keys, comments)
         dest = out_dir / report_name
