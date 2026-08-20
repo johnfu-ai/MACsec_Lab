@@ -8,7 +8,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .crypto import derive_eap_cak, derive_eap_ckn, derive_ick, derive_kek
+from .crypto import (
+    assign_sscis,
+    derive_eap_cak,
+    derive_eap_ckn,
+    derive_ick,
+    derive_kek,
+    xpn_default_salt,
+)
 
 PAE_GROUP_ADDR = bytes.fromhex("0180c2000003")
 ETHERTYPE_EAPOL = 0x888E
@@ -28,6 +35,13 @@ CS_GCM_AES_128 = bytes.fromhex("0080c20001000001")  # default (802.1AE-2006)
 CS_GCM_AES_256 = bytes.fromhex("0080c20001000002")  # 802.1AEbn-2011
 CS_GCM_AES_XPN_128 = bytes.fromhex("0080c20001000003")  # 802.1AEbw-2013
 CS_GCM_AES_XPN_256 = bytes.fromhex("0080c20001000004")  # 802.1AEbw-2013
+
+CIPHER_SUITE_NAMES = {
+    CS_GCM_AES_128: "GCM-AES-128（默认，Distributed SAK 省略套件 ID）",
+    CS_GCM_AES_256: "GCM-AES-256",
+    CS_GCM_AES_XPN_128: "GCM-AES-XPN-128（64-bit PN，SSCI+Salt nonce）",
+    CS_GCM_AES_XPN_256: "GCM-AES-XPN-256",
+}
 
 
 def _h(s: str) -> bytes:
@@ -110,6 +124,8 @@ class LabKeys:
     sak2: bytes = b""
     # Third SAK for the confidentiality-offset story (KN=3, AN=2, co=30).
     sak3: bytes = b""
+    # Fourth SAK for the XPN story (KN=4, AN=3, GCM-AES-XPN-128).
+    sak4: bytes = b""
 
     @classmethod
     def default(cls) -> "LabKeys":
@@ -143,6 +159,7 @@ class LabKeys:
             source="psk",
             sak2=_h("c1c2c3c4c5c6c7c8c9cacbcccdcecfd0"),
             sak3=_h("d1d2d3d4d5d6d7d8d9dadbdcdddedfe0"),
+            sak4=_h("e1e2e3e4e5e6e7e8e9eaebecedeeeff0"),
         )
 
     @classmethod
@@ -225,4 +242,12 @@ class LabKeys:
         if self.sak3:
             out["sak3"] = self.sak3.hex()
             out["sak3_note"] = "co30 story: KN=3, AN=2, confidentiality offset 30"
+        if self.sak4:
+            ssci = assign_sscis([self.a.sci, self.b.sci])
+            out["sak4"] = self.sak4.hex()
+            out["sak4_note"] = "xpn story: KN=4, AN=3, GCM-AES-XPN-128"
+            out["xpn_cipher_suite"] = CS_GCM_AES_XPN_128.hex(":")
+            out["xpn_salt"] = xpn_default_salt(self.a.sci).hex()
+            out["xpn_ssci_a"] = f"0x{ssci[self.a.sci]:04x} (node-a transmit SC)"
+            out["xpn_ssci_b"] = f"0x{ssci[self.b.sci]:04x} (node-b transmit SC)"
         return out

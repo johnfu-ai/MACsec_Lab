@@ -96,6 +96,9 @@ make verify      # 测试 + tshark 能否认出 mka / macsec
 - `[captures/decoded/03-macsec-integrity-only.md](captures/decoded/03-macsec-integrity-only.md)`
 - `[captures/decoded/11-mka-after-eap.md](captures/decoded/11-mka-after-eap.md)` — EAP-Success 之后的 MKA（Authenticator / Supplicant）
 - `[captures/decoded/13-mka-rekey.md](captures/decoded/13-mka-rekey.md)` — SAK 重加密全过程（AN=0 → AN=1 → 旧钥退役）
+- `[captures/decoded/14-mka-co30.md](captures/decoded/14-mka-co30.md)` — confidentiality offset 30：前 30 字节只认证不加密
+- `[captures/decoded/15-ieee-integrity-256.md](captures/decoded/15-ieee-integrity-256.md)` / `[16-ieee-encrypt-256.md](captures/decoded/16-ieee-encrypt-256.md)` — IEEE GCM-AES-256 官方向量
+- `[captures/decoded/17-mka-xpn.md](captures/decoded/17-mka-xpn.md)` — XPN：套件 ID 进 Distributed SAK，PN64 越过 2³²、线上 PN 回绕而不换钥
 
 
 
@@ -107,6 +110,8 @@ make verify      # 测试 + tshark 能否认出 mka / macsec
 | `captures/mka-handshake.pcap`             | 6 帧 MKA（PSK CAK）：hello → 选 KS → 分发 SAK → 双方 SAK Use |
 | `captures/mka-after-eap.pcap`             | EAP-Success 之后：Authenticator 为 KS，CAK 从 MSK 派生     |
 | `captures/mka-rekey.pcap`                 | SAK 重加密：AN=0 → AN=1，双 SA 并存 → 旧钥退役（[docs/lifecycle.md](docs/lifecycle.md)） |
+| `captures/mka-co30.pcap`                  | Confidentiality offset 30：内层 EtherType+IP+8 字节明文可见，只认证不加密 |
+| `captures/mka-xpn.pcap`                   | XPN 套件：Distributed SAK 带 8 字节套件 ID、SSCI/Salt nonce、PN64 越过 2³² 不换钥（[docs/cipher-suites.md](docs/cipher-suites.md)） |
 | `captures/macsec-lab-encrypted.pcap`      | 实验室 GCM-AES-128，载荷加密                       |
 | `captures/macsec-lab-integrity-only.pcap` | 同一 ICMP，`E=0 C=0`，内层 IPv4 明文可见             |
 | `captures/macsec-ieee-gcm-aes-128-*.pcap` | IEEE 公布的 GCM 测试向量（128-bit key）               |

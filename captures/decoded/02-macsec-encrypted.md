@@ -34,7 +34,7 @@
 | 12 | 2 | `88e5` | EtherType | `0x88e5` | 802.1AE MACsec |
 | 14 | 1 | `2c` | TCI/AN | `0x2c` | V=0 ES=0 SC=1 SCB=0 E=1 C=1 AN=0；模式 confidentiality+integrity |
 | 15 | 1 | `28` | SL | `40` | Secure Data < 48 时填长度，否则 0 |
-| 16 | 4 | `00000001` | PN | `1 (0x00000001)` | 抗重放；GCM IV 的低 32 bit |
+| 16 | 4 | `00000001` | PN (wire) | `1 (0x00000001)` | 抗重放；GCM IV 的低 32 bit |
 | 20 | 8 | `02000000000a0001` | SCI | `02000000000a0001` | 显式携带；IV 高 64 bit |
 | 28 | 40 | `459d7b17401a006c7e107e01f5bafef3…1c6ef164` | Secure Data | `459d7b17401a006c7e107e01f5bafef3eb307386a93c1bb6ca1f30c527e682a4d71abd541c6ef164` | 密文 |
 | 68 | 16 | `c6aa63d5be322c44aa36d71502aa6ce9` | MACsec ICV | `c6aa63d5be322c44aa36d71502aa6ce9` | GCM tag；校验 通过 |
@@ -98,7 +98,7 @@
 | 12 | 2 | `88e5` | EtherType | `0x88e5` | 802.1AE MACsec |
 | 14 | 1 | `2c` | TCI/AN | `0x2c` | V=0 ES=0 SC=1 SCB=0 E=1 C=1 AN=0；模式 confidentiality+integrity |
 | 15 | 1 | `28` | SL | `40` | Secure Data < 48 时填长度，否则 0 |
-| 16 | 4 | `00000001` | PN | `1 (0x00000001)` | 抗重放；GCM IV 的低 32 bit |
+| 16 | 4 | `00000001` | PN (wire) | `1 (0x00000001)` | 抗重放；GCM IV 的低 32 bit |
 | 20 | 8 | `02000000000b0001` | SCI | `02000000000b0001` | 显式携带；IV 高 64 bit |
 | 28 | 40 | `26da7b83c51fa5cd01e3f3731e3cc5d8…5a2f65fa` | Secure Data | `26da7b83c51fa5cd01e3f3731e3cc5d88cb690717de9ad420554c1d4ae4f58ec877bfefa5a2f65fa` | 密文 |
 | 68 | 16 | `2be0cf0800d7f1e84384aa27ee56ba7e` | MACsec ICV | `2be0cf0800d7f1e84384aa27ee56ba7e` | GCM tag；校验 通过 |
@@ -162,7 +162,7 @@
 | 12 | 2 | `88e5` | EtherType | `0x88e5` | 802.1AE MACsec |
 | 14 | 1 | `2c` | TCI/AN | `0x2c` | V=0 ES=0 SC=1 SCB=0 E=1 C=1 AN=0；模式 confidentiality+integrity |
 | 15 | 1 | `28` | SL | `40` | Secure Data < 48 时填长度，否则 0 |
-| 16 | 4 | `00000002` | PN | `2 (0x00000002)` | 抗重放；GCM IV 的低 32 bit |
+| 16 | 4 | `00000002` | PN (wire) | `2 (0x00000002)` | 抗重放；GCM IV 的低 32 bit |
 | 20 | 8 | `02000000000a0001` | SCI | `02000000000a0001` | 显式携带；IV 高 64 bit |
 | 28 | 40 | `5ef76cf898540eef0505298be4eb4444…58e9cd7d` | Secure Data | `5ef76cf898540eef0505298be4eb44440d164d804d967186edf854626487dd06e897782958e9cd7d` | 密文 |
 | 68 | 16 | `6d2fdc99866dd54a1b9272697011a29e` | MACsec ICV | `6d2fdc99866dd54a1b9272697011a29e` | GCM tag；校验 通过 |
@@ -226,7 +226,7 @@
 | 12 | 2 | `88e5` | EtherType | `0x88e5` | 802.1AE MACsec |
 | 14 | 1 | `2c` | TCI/AN | `0x2c` | V=0 ES=0 SC=1 SCB=0 E=1 C=1 AN=0；模式 confidentiality+integrity |
 | 15 | 1 | `28` | SL | `40` | Secure Data < 48 时填长度，否则 0 |
-| 16 | 4 | `00000002` | PN | `2 (0x00000002)` | 抗重放；GCM IV 的低 32 bit |
+| 16 | 4 | `00000002` | PN (wire) | `2 (0x00000002)` | 抗重放；GCM IV 的低 32 bit |
 | 20 | 8 | `02000000000b0001` | SCI | `02000000000b0001` | 显式携带；IV 高 64 bit |
 | 28 | 40 | `41450202619a88a30cf6520862215181…6978d079` | Secure Data | `41450202619a88a30cf6520862215181be1cb9ff57bb91132f8fa77eb949b225bf4b76256978d079` | 密文 |
 | 68 | 16 | `c40c183451b3995fe380d946352bf4cc` | MACsec ICV | `c40c183451b3995fe380d946352bf4cc` | GCM tag；校验 通过 |
@@ -290,7 +290,7 @@
 | 12 | 2 | `88e5` | EtherType | `0x88e5` | 802.1AE MACsec |
 | 14 | 1 | `2c` | TCI/AN | `0x2c` | V=0 ES=0 SC=1 SCB=0 E=1 C=1 AN=0；模式 confidentiality+integrity |
 | 15 | 1 | `28` | SL | `40` | Secure Data < 48 时填长度，否则 0 |
-| 16 | 4 | `00000003` | PN | `3 (0x00000003)` | 抗重放；GCM IV 的低 32 bit |
+| 16 | 4 | `00000003` | PN (wire) | `3 (0x00000003)` | 抗重放；GCM IV 的低 32 bit |
 | 20 | 8 | `02000000000a0001` | SCI | `02000000000a0001` | 显式携带；IV 高 64 bit |
 | 28 | 40 | `d417c6fc039b58e4a4b6b1dcb79a3009…ec0cd5ba` | Secure Data | `d417c6fc039b58e4a4b6b1dcb79a30091f3f450aac9b1908995efb2396e616052033b454ec0cd5ba` | 密文 |
 | 68 | 16 | `219de9323bfc5a8cedd0f53168fe2c02` | MACsec ICV | `219de9323bfc5a8cedd0f53168fe2c02` | GCM tag；校验 通过 |
@@ -354,7 +354,7 @@
 | 12 | 2 | `88e5` | EtherType | `0x88e5` | 802.1AE MACsec |
 | 14 | 1 | `2c` | TCI/AN | `0x2c` | V=0 ES=0 SC=1 SCB=0 E=1 C=1 AN=0；模式 confidentiality+integrity |
 | 15 | 1 | `28` | SL | `40` | Secure Data < 48 时填长度，否则 0 |
-| 16 | 4 | `00000003` | PN | `3 (0x00000003)` | 抗重放；GCM IV 的低 32 bit |
+| 16 | 4 | `00000003` | PN (wire) | `3 (0x00000003)` | 抗重放；GCM IV 的低 32 bit |
 | 20 | 8 | `02000000000b0001` | SCI | `02000000000b0001` | 显式携带；IV 高 64 bit |
 | 28 | 40 | `75285e94fd65792a5f82014042fe32d7…7cad325e` | Secure Data | `75285e94fd65792a5f82014042fe32d79b1f155fad0d1b3ecb1d4a6a6f1d8b228476a64f7cad325e` | 密文 |
 | 68 | 16 | `a12157447fb8c2ed971bf20b3bf0ede7` | MACsec ICV | `a12157447fb8c2ed971bf20b3bf0ede7` | GCM tag；校验 通过 |
@@ -418,7 +418,7 @@
 | 12 | 2 | `88e5` | EtherType | `0x88e5` | 802.1AE MACsec |
 | 14 | 1 | `4c` | TCI/AN | `0x4c` | V=0 ES=1 SC=0 SCB=0 E=1 C=1 AN=0；模式 confidentiality+integrity |
 | 15 | 1 | `28` | SL | `40` | Secure Data < 48 时填长度，否则 0 |
-| 16 | 4 | `00000009` | PN | `9 (0x00000009)` | 抗重放；GCM IV 的低 32 bit |
+| 16 | 4 | `00000009` | PN (wire) | `9 (0x00000009)` | 抗重放；GCM IV 的低 32 bit |
 | 20 | 0 | `02000000000a0001` | SCI (inferred) | `02000000000a0001` | 线上无 SCI；ES=1 时用 SA‖00-01 还原，仍参与 IV |
 | 20 | 40 | `3394d9cae188f72ddab1839035759139…ecba009b` | Secure Data | `3394d9cae188f72ddab1839035759139e1c14cd7c5c79b86244dbbdd630969eb43dc9773ecba009b` | 密文 |
 | 60 | 16 | `aeaa5a25d25f4ea4a91436d1b016cd0e` | MACsec ICV | `aeaa5a25d25f4ea4a91436d1b016cd0e` | GCM tag；校验 通过 |

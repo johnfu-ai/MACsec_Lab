@@ -14,7 +14,7 @@ ICV 一律 128 bit（GCM tag）。四个套件的 AAD 构造（DA‖SA‖SecTAG�
 ## 1. 套件怎么协商
 
 - MKPDU Basic 里的 **Algorithm Agility**（`00-80-C2-01`）标识 KDF/ICV 算法族（AES-CMAC），不是数据面套件。
-- 数据面套件随 SAK 分发：**Distributed SAK** 参数集里带 8 字节 cipher suite ID。**默认套件 GCM-AES-128 省略这个字段**（body length 28），其余三个套件都带（body length 36）——这就是为什么默认套件的 MKPDU 比别的短 8 字节。
+- 数据面套件随 SAK 分发：**Distributed SAK** 参数集里带 8 字节 cipher suite ID。**默认套件 GCM-AES-128 省略这个字段**（body length 28），其余三个套件都带（128-bit SAK 时 body length 36，256-bit SAK 时 52）——这就是为什么默认套件的 MKPDU 比别的短 8 字节。
 - 双方能力在 Basic 的 MACsec Capability 里声明；最终用哪个套件由 **Key Server** 决定。
 
 代码：`macsec_lab/keys.py` 的 `CS_GCM_AES_*`；`macsec_lab/mka.py` `DistributedSak(cipher_suite=...)`。
@@ -49,10 +49,19 @@ ICV 一律 128 bit（GCM tag）。四个套件的 AAD 构造（DA‖SA‖SecTAG�
 IV(96) = ( SSCI(32) ‖ PN64(64) ) XOR Salt(96)
 ```
 
-- **SSCI**（Short SCI，32 bit）：Key Server 经 MKA 分配的短标识，同一 SAK 下每个 SCI 唯一（默认按 SCI 大小排：最大的 SCI 用 0x0001，次之 0x0002…）。它随 Distributed SAK / SAK Use 走（SAK Use 里那个 "KS SSCI" 字段就是它）。
+- **SSCI**（Short SCI，32 bit）：Key Server 经 MKA 分配的短标识，同一 SAK 下每个 SCI 唯一（默认按 SCI 大小排：最大的 SCI 用 0x0001，次之 0x0002…，两端无需信令即可算出一致结果）。它的 LSB 走 **Live Peer List 参数集**的第 2 字节（Wireshark 叫 "Key Server SSCI (LSB)"，按 802.1X-2020 11.11.3 与 XPN 套件一起出现，**MKA version 3** 才有——v2 的帧这个字节恒为 0）。
 - **Salt**（96 bit）：随 SA 安装的nonce 扰码值。标准给了从 Key Server SCI 推导的默认值（`Salt[0:4] = SCI高32 XOR SCI低32`，`Salt[4:12] = KS的SCI`），部署上可当公开值——它的作用是让 nonce 与默认构造脱钩，**不是**第二把密钥。
 
-代码：`macsec_lab/crypto.py` `xpn_iv(ssci, pn64, salt)`；测试验证了布局、salt 敏感性（salt 变一个字节 ICV 即失败）与 GCM 往返。标准 Annex C 有 XPN 向量，但公开渠道的草案文本里 ICV 留空（`???`），故本仓库对 XPN 只做构造级验证，**没有**逐字节向量——这是诚实声明，别把 XPN 测试当成向量验证。
+抓包：`captures/mka-xpn.pcap`（报告 [17](../captures/decoded/17-mka-xpn.md)）把整条 XPN 故事走了一遍——
+
+1. Key Server 分发 SAK#4 时 **Distributed SAK 带 8 字节套件 ID**（body 28 → 36，帧 1）；
+2. Live Peer List 出现**非 0 的 KS SSCI LSB**（帧 1 是 A 的 0x02，帧 2/6 是 B 的 0x01）；
+3. 数据面 **PN64 越过 2^32**：帧 3 线上 PN=0xFFFFFFFF，帧 4 回绕成 0x00000001（真实 PN64=0x2_00000001），**同一把 SAK 不换钥**——这正是 XPN 存在的意义（32-bit 套件到帧 3 就必须 rekey 了）；
+4. 每帧的 IV 构造 `(SSCI‖PN64)⊕Salt` 在报告里逐字段展开，salt 取默认推导值。
+
+tshark 注意：**4.7+** 才展开 36 字节 Distributed SAK 里的套件 ID；4.6 对该参数集显示 Undecoded（其余参数集正常）。KS SSCI 字段在 4.6 即可显示（要求 MKA version 3）。本仓库自带解析器不受版本影响。
+
+代码：`macsec_lab/crypto.py` `xpn_iv(ssci, pn64, salt)`、`xpn_default_salt()`、`assign_sscis()`；`macsec_lab/macsec.py` `XpnPnTracker`（接收端按 802.1AE 10.6 从回绕恢复高 32 位）。测试验证了布局、salt 敏感性（salt 变一个字节 ICV 即失败）与 GCM 往返。标准 Annex C 有 XPN 向量，但公开渠道的草案文本里 ICV 留空（`???`），故本仓库对 XPN 只做构造级验证，**没有**逐字节向量——这是诚实声明，别把 XPN 测试当成向量验证。
 
 ### XPN 在哪用
 

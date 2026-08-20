@@ -140,6 +140,30 @@ def infer_sci(sa: bytes, tag: SecTAG, fallback: bytes | None = None) -> bytes:
     raise ValueError("SCI not present and cannot be inferred (need ES or explicit SCI)")
 
 
+class XpnPnTracker:
+    """Receiver-side recovery of the 64-bit PN from 32-bit on-wire values.
+
+    802.1AE 10.6: the SecTAG carries only PN[31:0]; the SA tracks the high
+    half. A large backwards jump in the low half means the low half wrapped
+    and the high half incremented. Replayed old values land below the
+    replay window (the checker, not the tracker, rejects them).
+    """
+
+    def __init__(self, high: int = 0, last_low: int = 0) -> None:
+        if not 0 <= high <= 0xFFFFFFFF:
+            raise ValueError("PN high half is 32 bits")
+        self.high = high
+        self.last_low = last_low
+
+    def update(self, wire_pn: int) -> int:
+        if not 1 <= wire_pn <= 0xFFFFFFFF:
+            raise ValueError("on-wire PN is 1..2^32-1")
+        if wire_pn < self.last_low and self.last_low - wire_pn > 0x80000000:
+            self.high += 1
+        self.last_low = wire_pn
+        return (self.high << 32) | wire_pn
+
+
 def protect_frame(
     da: bytes,
     sa: bytes,
@@ -148,6 +172,7 @@ def protect_frame(
     tag: SecTAG,
     sci_for_iv: bytes,
     confidentiality_offset: int = 0,
+    iv: bytes | None = None,
 ) -> bytes:
     """Build a complete Ethernet MACsec frame (no FCS).
 
@@ -159,11 +184,16 @@ def protect_frame(
         A = DA || SA || SecTAG || User[0:co]   P = User[co:]
     The offset is signaled in the MKA Distributed SAK parameter set, not in
     the SecTAG, so the receiver must know it from MKA context.
+
+    iv defaults to SCI(64) || PN(32) (the GCM-AES-128/256 construction).
+    XPN callers pass xpn_iv(ssci, pn64, salt) instead, with the SecTAG PN
+    carrying only the low 32 bits of the 64-bit PN.
     """
     co = check_confidentiality_offset(confidentiality_offset, user_data) if tag.e else 0
     tag.sl = short_length(len(user_data))
     sectag = tag.pack_with_ethertype()
-    iv = sci_for_iv + tag.pn.to_bytes(4, "big")
+    if iv is None:
+        iv = sci_for_iv + tag.pn.to_bytes(4, "big")
     if tag.e:
         aad = da + sa + sectag + user_data[:co]
         ciphertext, icv = gcm_protect(sak, iv, aad, user_data[co:])
@@ -180,6 +210,7 @@ def parse_frame(
     sak: bytes | None = None,
     sci_hint: bytes | None = None,
     confidentiality_offset: int = 0,
+    iv: bytes | None = None,
 ) -> dict:
     if len(frame) < 14 + 6 + 16:
         raise ValueError("frame too short for MACsec")
@@ -211,7 +242,8 @@ def parse_frame(
             result["user_data"] = secure
         return result
     co = confidentiality_offset if tag.e else 0
-    iv = sci + tag.pn.to_bytes(4, "big")
+    if iv is None:
+        iv = sci + tag.pn.to_bytes(4, "big")
     sectag = tag.pack_with_ethertype()
     try:
         if tag.e:

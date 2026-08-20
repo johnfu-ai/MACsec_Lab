@@ -23,6 +23,12 @@
   "sak2_note": "rekey story: KN=2, AN=1",
   "sak3": "d1d2d3d4d5d6d7d8d9dadbdcdddedfe0",
   "sak3_note": "co30 story: KN=3, AN=2, confidentiality offset 30",
+  "sak4": "e1e2e3e4e5e6e7e8e9eaebecedeeeff0",
+  "sak4_note": "xpn story: KN=4, AN=3, GCM-AES-XPN-128",
+  "xpn_cipher_suite": "00:80:c2:00:01:00:00:03",
+  "xpn_salt": "020a000102000000000a0001",
+  "xpn_ssci_a": "0x0002 (node-a transmit SC)",
+  "xpn_ssci_b": "0x0001 (node-b transmit SC)",
   "eap": {
     "source": "eap",
     "cak": "9414a9434321fde7334cfd5356542f2c",

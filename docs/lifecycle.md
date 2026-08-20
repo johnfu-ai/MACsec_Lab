@@ -13,7 +13,7 @@ GCM 的 nonce = SAK ‖ (SCI ‖ PN)。同一把 SAK 上 **PN 不得重复**，�
 | 100 Gbps | ~148.8 Mpps | ≈ 29 秒 |
 | 400 Gbps | ~595 Mpps | ≈ 7 秒 |
 
-所以 Key Server 必须在 PN 接近 2³² **之前**分发新 SAK。除此之外，出于密钥新鲜度策略（如定期强制换钥）也会触发 rekey。32-bit PN 不够用的场景正是 XPN 套件（64-bit PN）的动机，见 [cipher-suites.md](cipher-suites.md)。
+所以 Key Server 必须在 PN 接近 2³² **之前**分发新 SAK。除此之外，出于密钥新鲜度策略（如定期强制换钥）也会触发 rekey。32-bit PN 不够用的场景正是 XPN 套件（64-bit PN）的动机，见 [cipher-suites.md](cipher-suites.md)；PN 越过 2³²、线上 PN 回绕而**不换钥**的样子，抓在 `captures/mka-xpn.pcap`（报告 [17](../captures/decoded/17-mka-xpn.md)）。
 
 ## 2. 换钥时线上发生什么（`mka-rekey.pcap` 9 帧）
 

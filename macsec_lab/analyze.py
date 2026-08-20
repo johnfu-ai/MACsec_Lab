@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .crypto import assign_sscis, xpn_default_salt
 from .dissect import (
     dissect_eap,
     dissect_macsec,
@@ -23,7 +24,9 @@ from .keys import (
     LabKeys,
     Peer,
 )
+from .macsec import XpnPnTracker
 from .pcap import read_pcap
+from .scenario import XPN_INITIAL_PN64_HIGH
 
 
 def _mac(b: bytes) -> str:
@@ -59,6 +62,7 @@ def _lab_keys_from_json(d: dict, fallback: LabKeys) -> LabKeys:
         eap_session_id=bytes.fromhex(d["eap_session_id"]) if d.get("eap_session_id") else b"",
         sak2=bytes.fromhex(d["sak2"]) if d.get("sak2") else b"",
         sak3=bytes.fromhex(d["sak3"]) if d.get("sak3") else b"",
+        sak4=bytes.fromhex(d["sak4"]) if d.get("sak4") else b"",
     )
 
 
@@ -99,6 +103,7 @@ def render_frame(
     sci_a: bytes,
     sci_b: bytes,
     confidentiality_offset: int = 0,
+    xpn: dict | None = None,
 ) -> str:
     et = int.from_bytes(frame[12:14], "big")
     heading = f"## 帧 {n}"
@@ -151,16 +156,24 @@ def render_frame(
         ]
         return "\n".join(parts)
     if et == ETHERTYPE_MACSEC:
-        title, fields, parsed, inner = dissect_macsec(frame, sak, sci_a, sci_b, confidentiality_offset)
+        title, fields, parsed, inner = dissect_macsec(
+            frame, sak, sci_a, sci_b, confidentiality_offset, xpn
+        )
         tag = parsed["tag"]
         mode_line = f"{tag.mode}" + (f"（confidentiality offset {confidentiality_offset}，前 {confidentiality_offset} 字节明文）" if confidentiality_offset and tag.e else "")
+        iv_line = f"- GCM IV = SCI‖PN = `{parsed['iv'].hex()}`"
+        if xpn:
+            iv_line = (
+                f"- XPN IV = (SSCI‖PN64)⊕Salt = `{parsed['iv'].hex()}`"
+                f"（SSCI=0x{xpn['ssci']:04x}，PN64=0x{xpn['pn64']:016X}，Salt=`{xpn['salt'].hex()}`）"
+            )
         parts += [
             f"**{title}**",
             "",
             f"- 方向：`{_mac(parsed['sa'])}` → `{_mac(parsed['da'])}`（{len(frame)} B）",
             f"- 作用：{comment or 'MACsec 用户帧'}",
             f"- TCI `{tag.tci:#04x}`：{mode_line}；PN = `{tag.pn}`；SCI = `{parsed['sci'].hex()}`",
-            f"- GCM IV = SCI‖PN = `{parsed['iv'].hex()}`",
+            iv_line,
             f"- AAD = {parsed['aad_desc']}",
             f"- ICV 校验 = `{parsed['icv_ok']}`",
             "",
@@ -211,7 +224,12 @@ def analyze_pcap(
     sci_b: bytes | None = None,
     sak_by_an: dict[int, bytes] | None = None,
     confidentiality_offset: int = 0,
+    xpn: dict | None = None,
 ) -> str:
+    """xpn, when given, carries the XPN SA context: {"ssci": {mac: ssci},
+    "salt": bytes, "trackers": {mac: XpnPnTracker}}. Per MACsec frame the
+    analyzer recovers the 64-bit PN the way a receiver does (802.1AE 10.6)
+    and derives the nonce (SSCI || PN64) XOR Salt."""
     sak = sak if sak is not None else keys.sak
     sci_a = sci_a if sci_a is not None else keys.a.sci
     sci_b = sci_b if sci_b is not None else keys.b.sci
@@ -222,12 +240,22 @@ def analyze_pcap(
         comment = comments[i - 1] if i - 1 < len(comments) else ""
         sa, da = _mac(pkt.data[6:12]), _mac(pkt.data[0:6])
         frame_sak = _sak_for_frame(pkt.data, sak, sak_by_an)
+        frame_xpn = None
+        if xpn is not None and int.from_bytes(pkt.data[12:14], "big") == ETHERTYPE_MACSEC:
+            src_mac = pkt.data[6:12]
+            frame_xpn = {
+                "ssci": xpn["ssci"][src_mac],
+                "pn64": xpn["trackers"][src_mac].update(int.from_bytes(pkt.data[16:20], "big")),
+                "salt": xpn["salt"],
+            }
         summary_rows.append(
             f"| {i} | {len(pkt.data)} | `{sa}` → `{da}` | "
-            f"{comment or one_line(pkt.data, keys, sci_a, sci_b, frame_sak, confidentiality_offset)} |"
+            f"{comment or one_line(pkt.data, keys, sci_a, sci_b, frame_sak, confidentiality_offset, frame_xpn)} |"
         )
         bodies.append(
-            render_frame(i, pkt.data, keys, comment, frame_sak, sci_a, sci_b, confidentiality_offset)
+            render_frame(
+                i, pkt.data, keys, comment, frame_sak, sci_a, sci_b, confidentiality_offset, frame_xpn
+            )
         )
     header = [
         f"# 逐帧解析 — `{path.name}`",
@@ -304,6 +332,7 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         ("mka-after-eap.pcap", "eap", "11-mka-after-eap.md"),
         ("mka-rekey.pcap", "rekey", "13-mka-rekey.md"),
         ("mka-co30.pcap", "co30", "14-mka-co30.md"),
+        ("mka-xpn.pcap", "xpn", "17-mka-xpn.md"),
         ("macsec-ieee-gcm-aes-256-integrity.pcap", "ieee256", "15-ieee-integrity-256.md"),
         ("macsec-ieee-gcm-aes-256-encrypt.pcap", "ieee256", "16-ieee-encrypt-256.md"),
     ]
@@ -327,6 +356,24 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
             # SAK#3 on AN=2 with confidentiality offset 30 (inner EtherType+IP+L4 in clear).
             text = analyze_pcap(
                 pcap, keys, comments, sak_by_an={2: keys.sak3}, confidentiality_offset=30
+            )
+        elif kind == "xpn":
+            # SAK#4 on AN=3, GCM-AES-XPN-128: nonce (SSCI||PN64) XOR Salt,
+            # on-wire PN is only the low 32 bits; per-direction recovery.
+            ssci = assign_sscis([keys.a.sci, keys.b.sci])
+            text = analyze_pcap(
+                pcap,
+                keys,
+                comments,
+                sak_by_an={3: keys.sak4},
+                xpn={
+                    "ssci": {keys.a.mac: ssci[keys.a.sci], keys.b.mac: ssci[keys.b.sci]},
+                    "salt": xpn_default_salt(keys.a.sci),
+                    "trackers": {
+                        keys.a.mac: XpnPnTracker(high=XPN_INITIAL_PN64_HIGH),
+                        keys.b.mac: XpnPnTracker(high=XPN_INITIAL_PN64_HIGH),
+                    },
+                },
             )
         else:
             text = analyze_pcap(pcap, keys, comments)

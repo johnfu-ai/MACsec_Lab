@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from .crypto import wrap_sak
+from .crypto import assign_sscis, wrap_sak, xpn_default_salt, xpn_iv
 from .keys import (
+    CS_GCM_AES_XPN_128,
     EAP_CODE_SUCCESS,
     EAPOL_TYPE_EAP,
     EAPOL_VERSION,
@@ -32,10 +33,15 @@ from .mka import (
 )
 
 
-def _basic(peer, keys: LabKeys, mn: int, key_server: bool) -> BasicParamSet:
-    """Basic Parameter Set shared by every MKPDU story."""
+def _basic(peer, keys: LabKeys, mn: int, key_server: bool, version: int = 2) -> BasicParamSet:
+    """Basic Parameter Set shared by every MKPDU story.
+
+    MKA version 2 = 802.1X-2010 (handshake / rekey / co30 stories); the XPN
+    story uses version 3 (802.1X-2020), the version the Key Server SSCI byte
+    in Live Peer Lists belongs to.
+    """
     return BasicParamSet(
-        version=2,
+        version=version,
         ks_priority=peer.ks_priority,
         key_server=key_server,
         macsec_desired=True,
@@ -336,6 +342,97 @@ def mka_co30(keys: LabKeys) -> list[tuple[str, bytes]]:
             param_sets=[
                 PeerList(1, [PeerTuple(a.mi, 8)]),
                 _sak_use((2, True, True), a.mi, 3, 1),
+            ],
+        ),
+    ))
+    return frames
+
+
+# The XPN story starts with the SA having already used the first 2^32 PNs —
+# that is the situation XPN exists for (32-bit suites would have to rekey).
+XPN_INITIAL_PN64_HIGH = 1
+
+
+def mka_xpn(keys: LabKeys) -> list[tuple[str, bytes]]:
+    """XPN cipher-suite story: SAK#4 as GCM-AES-XPN-128 (AN=3, KN=4).
+
+    Continues the PSK story (MN 1-8 are handshake / rekey / co30). The Key
+    Server rolls to the XPN suite, so this Distributed SAK is the first (and
+    only) one that carries the 8-octet cipher suite ID — body length 36
+    instead of the default suite's 28. Data frames then cross the 2^32
+    boundary: the on-wire PN wraps FFFFFFFF -> 00000001 while the real
+    64-bit PN keeps climbing, and the nonce is (SSCI || PN64) XOR Salt
+    instead of SCI || PN. Requires LabKeys.sak4.
+    """
+    if not keys.sak4:
+        raise ValueError("mka_xpn needs LabKeys.sak4 (XPN SAK)")
+    a, b = keys.a, keys.b
+    ssci = assign_sscis([a.sci, b.sci])  # deterministic: largest SCI -> 0x0001
+    salt = xpn_default_salt(a.sci)
+    keys4 = replace(keys, sak=keys.sak4, kn=4, an=3)
+    wrapped4 = wrap_sak(keys.kek, keys.sak4)
+    frames: list[tuple[str, bytes]] = []
+
+    frames.append((
+        "A MN=9 (MKA version 3, 802.1X-2020) rekey to XPN suite: Distributed SAK#4 carries "
+        "cipher suite 00-80-C2-00-01-00-00-03 (body length 36; default suite omits the ID, 28)",
+        build_mkpdu_frame(
+            sa=a.mac,
+            ick=keys.ick,
+            basic=_basic(a, keys, 9, True, version=3),
+            param_sets=[
+                DistributedSak(
+                    an=keys4.an,
+                    confidentiality_offset=0,
+                    kn=keys4.kn,
+                    wrapped_sak=wrapped4,
+                    cipher_suite=CS_GCM_AES_XPN_128,
+                ),
+                PeerList(1, [PeerTuple(b.mi, 8)], key_server_ssci=ssci[a.sci]),
+                _sak_use((3, True, False), a.mi, 4, 1, old=(2, False, True), old_kn=3, old_lpn=1),
+            ],
+        ),
+    ))
+    frames.append((
+        f"B MN=9 installed XPN SAK#4: SAK Use latest=AN3 tx+rx; peer-list byte "
+        f"now carries B's own SSCI LSB 0x{ssci[b.sci]:02x} (非 XPN 故事里是 0)",
+        build_mkpdu_frame(
+            sa=b.mac,
+            ick=keys.ick,
+            basic=_basic(b, keys, 9, False, version=3),
+            param_sets=[
+                PeerList(1, [PeerTuple(a.mi, 9)], key_server_ssci=ssci[b.sci]),
+                _sak_use((3, True, True), a.mi, 4, 1, old=(2, False, True), old_kn=3, old_lpn=1),
+            ],
+        ),
+    ))
+
+    # --- data plane: cross the 2^32 boundary without a rekey ---
+    xpn_data = [
+        (a, b, "10.10.0.10", "10.10.0.20", (XPN_INITIAL_PN64_HIGH << 32) | 0xFFFFFFFF, 13,
+         "A→B PN64=0x1FFFFFFFF: the LAST frame of the first 2^32 epoch — a 32-bit "
+         "suite would have to rekey here, XPN keeps going"),
+        (a, b, "10.10.0.10", "10.10.0.20", ((XPN_INITIAL_PN64_HIGH + 1) << 32) | 1, 14,
+         "A→B PN64=0x200000001: on-wire PN wrapped to 0x00000001; receiver recovers the "
+         "high half from SA state (802.1AE 10.6), same SAK, no MKA churn"),
+        (b, a, "10.10.0.20", "10.10.0.10", (XPN_INITIAL_PN64_HIGH << 32) | 3, 15,
+         "B→A PN64=0x100000003: own SA, own SSCI, own PN64 space — the nonce is per-SC"),
+    ]
+    for src, dst, src_ip, dst_ip, pn64, seq, label in xpn_data:
+        user = ipv4_icmp_echo(src_ip, dst_ip, ident=0x4242, seq=seq)
+        tag = SecTAG.build(pn=pn64 & 0xFFFFFFFF, an=keys4.an, encrypt=True, sci=src.sci)
+        iv = xpn_iv(ssci[src.sci], pn64, salt)
+        frames.append((label, protect_frame(dst.mac, src.mac, user, keys4.sak, tag, src.sci, iv=iv)))
+
+    frames.append((
+        "B MN=10 keepalive on the XPN SA: everything above 2^32 is business as usual",
+        build_mkpdu_frame(
+            sa=b.mac,
+            ick=keys.ick,
+            basic=_basic(b, keys, 10, False, version=3),
+            param_sets=[
+                PeerList(1, [PeerTuple(a.mi, 9)], key_server_ssci=ssci[b.sci]),
+                _sak_use((3, True, True), a.mi, 4, 2),
             ],
         ),
     ))

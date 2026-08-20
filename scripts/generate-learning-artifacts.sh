@@ -27,6 +27,8 @@ if command -v tshark >/dev/null 2>&1; then
         > "${DECODE}/13-tshark-mka-rekey-verbose.txt" 2>/dev/null || true
     tshark -r captures/mka-co30.pcap -Y "mka or macsec" -V \
         > "${DECODE}/14-tshark-mka-co30-verbose.txt" 2>/dev/null || true
+    tshark -r captures/mka-xpn.pcap -Y "mka or macsec" -V \
+        > "${DECODE}/17-tshark-mka-xpn-verbose.txt" 2>/dev/null || true
     tshark -r captures/macsec-ieee-gcm-aes-256-encrypt.pcap -Y "macsec" -V \
         > "${DECODE}/16-tshark-ieee256-encrypt-verbose.txt" 2>/dev/null || true
     tshark -r captures/session-full.pcap -q -z io,phs \
@@ -48,7 +50,8 @@ MACsec Lab — decoded learning artifacts
 13-mka-rekey.md                     SAK 重加密：AN=0 → AN=1 换钥全过程
 14-mka-co30.md                      Confidentiality Offset 30：内层 IP 头明文可见
 15/16-ieee-*256.md                  IEEE GCM-AES-256 官方向量（同帧、256-bit key）
-07–10, 12–14, 16 tshark             Wireshark 树（若已安装 tshark）
+17-mka-xpn.md                       XPN：套件 ID 进 Distributed SAK，PN64 越过 2^32 回绕
+07–10, 12–14, 16, 17 tshark         Wireshark 树（若已安装 tshark）
 
 中文总览（含序列图）：docs/protocol-analysis.md
 EAP vs PSK：docs/mka-protocol-analysis.md

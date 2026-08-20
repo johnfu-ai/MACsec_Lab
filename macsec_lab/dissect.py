@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .crypto import xpn_iv
 from .keys import (
+    CIPHER_SUITE_NAMES,
     EAPOL_TYPE_EAP,
     ETHERTYPE_EAPOL,
     ETHERTYPE_IPV4,
@@ -186,7 +188,15 @@ def dissect_mka(frame: bytes, keys: LabKeys) -> tuple[str, list[Field], dict]:
         chunk = mk_body[rel : rel + total]
         if code == 0:
             assert isinstance(obj, BasicParamSet)
-            _add(fields, frame, abs_off, 1, "MKA Version", str(obj.version), "Basic 第 1 字节是版本不是 type")
+            _add(
+                fields,
+                frame,
+                abs_off,
+                1,
+                "MKA Version",
+                str(obj.version),
+                "Basic 第 1 字节是版本不是 type；2 = 802.1X-2010，3 = 802.1X-2020（XPN 的 KS SSCI 字段随 v3 出现）",
+            )
             _add(
                 fields,
                 frame,
@@ -242,7 +252,15 @@ def dissect_mka(frame: bytes, keys: LabKeys) -> tuple[str, list[Field], dict]:
             continue
         if code in (1, 2) and isinstance(obj, PeerList):
             _add(fields, frame, abs_off, 1, "Param type", str(code), name)
-            _add(fields, frame, abs_off + 1, 1, "KS SSCI LSB", str(obj.key_server_ssci), "非 XPN 时为 0")
+            _add(
+                fields,
+                frame,
+                abs_off + 1,
+                1,
+                "KS SSCI LSB",
+                f"0x{obj.key_server_ssci:02x}",
+                "XPN：发送方 SC 的 SSCI 低位（默认分配：SCI 最大者 0x0001）；非 XPN 时为 0",
+            )
             _add(fields, frame, abs_off + 2, 2, "Body length", str(_read_body_len(chunk, 2)), "")
             p = abs_off + 4
             for i, peer in enumerate(obj.peers, 1):
@@ -293,9 +311,28 @@ def dissect_mka(frame: bytes, keys: LabKeys) -> tuple[str, list[Field], dict]:
                 f"AN={obj.an} offset_code={obj.confidentiality_offset} "
                 f"(→前 {CO_CODES.get(obj.confidentiality_offset, '?')} 字节不加密)",
             )
-            _add(fields, frame, abs_off + 2, 2, "Body length", str(_read_body_len(chunk, 2)), "28 = 默认 GCM-AES-128")
+            _add(
+                fields,
+                frame,
+                abs_off + 2,
+                2,
+                "Body length",
+                str(_read_body_len(chunk, 2)),
+                "28 = 默认 GCM-AES-128（省略套件 ID）；36 = 128-bit SAK + 套件 ID；52 = 256-bit SAK + 套件 ID",
+            )
             _add(fields, frame, abs_off + 4, 4, "Key Number", str(obj.kn), "本把 SAK 的编号")
             wrap_off = abs_off + 8
+            if obj.cipher_suite:
+                _add(
+                    fields,
+                    frame,
+                    abs_off + 8,
+                    8,
+                    "SAK Cipher Suite",
+                    obj.cipher_suite.hex(":"),
+                    CIPHER_SUITE_NAMES.get(obj.cipher_suite, "未知套件；仅默认套件可省略此字段"),
+                )
+                wrap_off = abs_off + 16
             wrap_len = len(obj.wrapped_sak)
             note = "AES-KeyWrap(KEK, SAK)，24 B = 16 B SAK + 8 B wrap IV"
             if parsed.get("unwrapped_sak"):
@@ -380,12 +417,17 @@ def dissect_macsec(
     sci_a: bytes,
     sci_b: bytes,
     confidentiality_offset: int = 0,
+    xpn: dict | None = None,
 ) -> tuple[str, list[Field], dict, list[Field]]:
+    """xpn carries {"ssci", "pn64", "salt"} when the frame uses an XPN suite:
+    the nonce is (SSCI || PN64) XOR Salt and the on-wire PN is only the low
+    32 bits of pn64 (the caller recovered the high half, 802.1AE 10.6)."""
+    iv_override = xpn_iv(xpn["ssci"], xpn["pn64"], xpn["salt"]) if xpn else None
     parsed = None
     last_err = None
     for hint in (None, sci_a, sci_b):
         try:
-            parsed = parse_frame(frame, sak, hint, confidentiality_offset)
+            parsed = parse_frame(frame, sak, hint, confidentiality_offset, iv_override)
             if parsed["icv_ok"] is False:
                 continue
             break
@@ -398,7 +440,14 @@ def dissect_macsec(
     fields = ethernet_fields(frame, "802.1AE MACsec")
     _add(fields, frame, 14, 1, "TCI/AN", f"{tag.tci:#04x}", tci_bits(tag.tci) + f"；模式 {tag.mode}")
     _add(fields, frame, 15, 1, "SL", str(tag.sl), "Secure Data < 48 时填长度，否则 0")
-    _add(fields, frame, 16, 4, "PN", f"{tag.pn} ({tag.pn:#010x})", "抗重放；GCM IV 的低 32 bit")
+    pn_note = "抗重放；GCM IV 的低 32 bit"
+    if xpn:
+        pn_note = "XPN：线上只有低 32 位；高 32 位不在帧里（接收端恢复）"
+    _add(fields, frame, 16, 4, "PN (wire)", f"{tag.pn} ({tag.pn:#010x})", pn_note)
+    if xpn:
+        fields.append(Field(16, 0, "PN64 (恢复)", f"{xpn['pn64']} (0x{xpn['pn64']:016x})", "越过 2^32 后线上 PN 回绕，真实 PN 继续增长", ""))
+        fields.append(Field(16, 0, "SSCI", f"0x{xpn['ssci']:04x}", "同 SAK 下每个 SC 唯一（默认：SCI 最大者 0x0001）", ""))
+        fields.append(Field(16, 0, "Salt", xpn["salt"].hex(), "公开 nonce 扰码，默认从 KS SCI 推导", ""))
     hdr = 20
     if tag.sc:
         _add(fields, frame, 20, 8, "SCI", parsed["sci"].hex(), "显式携带；IV 高 64 bit")
@@ -463,7 +512,7 @@ def dissect_macsec(
         inner = dissect_ipv4_user(parsed["user_data"])
 
     sci = parsed["sci"]
-    iv = sci + tag.pn.to_bytes(4, "big")
+    iv = iv_override if iv_override is not None else sci + tag.pn.to_bytes(4, "big")
     parsed["iv"] = iv
     if not tag.e:
         parsed["aad_desc"] = "DA‖SA‖SecTAG‖User Data（P 为空）"
@@ -471,9 +520,14 @@ def dissect_macsec(
         parsed["aad_desc"] = f"DA‖SA‖SecTAG‖User[0:{co}]（P = User[{co}:]）"
     else:
         parsed["aad_desc"] = "DA‖SA‖SecTAG（P = User Data）"
+    if xpn:
+        parsed["iv_desc"] = "IV = (SSCI‖PN64)⊕Salt"
+    else:
+        parsed["iv_desc"] = "IV = SCI‖PN"
     co_txt = f"  co={co}" if co else ""
+    xpn_txt = f"  XPN PN64=0x{xpn['pn64']:X}" if xpn else ""
     title = (
-        f"MACsec  PN={tag.pn}  {tag.mode}{co_txt}  "
+        f"MACsec  PN={tag.pn}{xpn_txt}  {tag.mode}{co_txt}  "
         f"{'SC=1' if tag.sc else 'ES=1 无 SCI'}  ICV={'OK' if parsed['icv_ok'] else 'FAIL'}"
     )
     return title, fields, parsed, inner
@@ -486,6 +540,7 @@ def one_line(
     sci_b: bytes,
     sak: bytes | None = None,
     confidentiality_offset: int = 0,
+    xpn: dict | None = None,
 ) -> str:
     et = int.from_bytes(frame[12:14], "big")
     if et == ETHERTYPE_EAPOL:
@@ -499,7 +554,7 @@ def one_line(
         return f"MKA MN={p['basic'].actor_mn} {role}: {sets}"
     if et == ETHERTYPE_MACSEC:
         _, _, p, inner = dissect_macsec(
-            frame, sak if sak is not None else keys.sak, sci_a, sci_b, confidentiality_offset
+            frame, sak if sak is not None else keys.sak, sci_a, sci_b, confidentiality_offset, xpn
         )
         tag = p["tag"]
         seq = ""
@@ -509,5 +564,6 @@ def one_line(
                 break
         an = f" AN={tag.an}" if tag.an else ""
         co = f" co={confidentiality_offset}" if confidentiality_offset else ""
-        return f"MACsec PN={tag.pn}{an}{co} {tag.mode}{seq}"
+        xp = f" XPN(PN64=0x{xpn['pn64']:X})" if xpn else ""
+        return f"MACsec PN={tag.pn}{an}{co}{xp} {tag.mode}{seq}"
     return f"EtherType {et:#06x}"

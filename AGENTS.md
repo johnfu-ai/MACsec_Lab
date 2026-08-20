@@ -33,10 +33,11 @@ When asked "does it work?", run `make verify` and read the output.
 
 ## Layout
 
-- `macsec_lab/crypto.py` — GCM, AES-CMAC KDF, AES-KW
-- `macsec_lab/macsec.py` — SecTAG
+- `macsec_lab/crypto.py` — GCM, AES-CMAC KDF, AES-KW, XPN nonce/salt/SSCI helpers
+- `macsec_lab/macsec.py` — SecTAG, `XpnPnTracker` (64-bit PN recovery, 802.1AE 10.6)
 - `macsec_lab/mka.py` — MKPDU
-- `macsec_lab/scenario.py` — PSK handshake, EAP-Success + MKA, SAK rekey, ICMP frames
+- `macsec_lab/scenario.py` — PSK handshake, EAP-Success + MKA, SAK rekey, co30, XPN story, ICMP frames
 - `docs/key-hierarchy.md` — CAK / CKN / KEK / ICK / SAK (PSK vs EAP; SAK is not KDF from CAK)
 - `docs/lifecycle.md` — rekey story (AN/KN rotation, PN exhaustion, SAK retire); capture `mka-rekey.pcap` needs `LabKeys.sak2`
+- `docs/cipher-suites.md` — 128/256/XPN suites; capture `mka-xpn.pcap` needs `LabKeys.sak4` (MKA version 3, non-zero KS SSCI bytes)
 - `captures/` — committed pcaps

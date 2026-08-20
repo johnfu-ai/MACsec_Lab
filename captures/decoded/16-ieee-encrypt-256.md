@@ -28,7 +28,7 @@
 | 12 | 2 | `88e5` | EtherType | `0x88e5` | 802.1AE MACsec |
 | 14 | 1 | `2e` | TCI/AN | `0x2e` | V=0 ES=0 SC=1 SCB=0 E=1 C=1 AN=2；模式 confidentiality+integrity |
 | 15 | 1 | `00` | SL | `0` | Secure Data < 48 时填长度，否则 0 |
-| 16 | 4 | `b2c28465` | PN | `2999092325 (0xb2c28465)` | 抗重放；GCM IV 的低 32 bit |
+| 16 | 4 | `b2c28465` | PN (wire) | `2999092325 (0xb2c28465)` | 抗重放；GCM IV 的低 32 bit |
 | 20 | 8 | `12153524c0895e81` | SCI | `12153524c0895e81` | 显式携带；IV 高 64 bit |
 | 28 | 48 | `e2006eb42f5277022d9b19925bc419d7…56ab7836` | Secure Data | `e2006eb42f5277022d9b19925bc419d7a592666c925fe2ef718eb4e308efeaa7c5273b394118860a5be2a97f56ab7836` | 密文 |
 | 76 | 16 | `5ca597cdbb3edb8d1a1151ea0af7b436` | MACsec ICV | `5ca597cdbb3edb8d1a1151ea0af7b436` | GCM tag；校验 通过 |

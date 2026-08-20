@@ -322,7 +322,7 @@ def parse_eapol_mka(frame: bytes, ick: bytes | None = None, kek: bytes | None = 
             sets.append({"type": "Live Peer List", "code": 1, "peers": pl.peers, "ssci": pl.key_server_ssci})
         elif ptype_i == PS_POTENTIAL_PEER:
             pl, _ = PeerList.unpack(chunk)
-            sets.append({"type": "Potential Peer List", "code": 2, "peers": pl.peers})
+            sets.append({"type": "Potential Peer List", "code": 2, "peers": pl.peers, "ssci": pl.key_server_ssci})
         elif ptype_i == PS_SAK_USE:
             su, _ = SakUse.unpack(chunk)
             sets.append({"type": "MACsec SAK Use", "code": 3, "body": su})

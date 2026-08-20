@@ -9,8 +9,17 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from macsec_lab.crypto import derive_eap_cak, derive_eap_ckn, gcm_protect, gcm_validate, xpn_iv
+from macsec_lab.crypto import (
+    assign_sscis,
+    derive_eap_cak,
+    derive_eap_ckn,
+    gcm_protect,
+    gcm_validate,
+    xpn_default_salt,
+    xpn_iv,
+)
 from macsec_lab.keys import (
+    CS_GCM_AES_XPN_128,
     EAPOL_TYPE_EAP,
     IEEE_DA,
     IEEE_ENC_CT_128,
@@ -29,10 +38,11 @@ from macsec_lab.keys import (
     LabKeys,
 )
 from macsec_lab.l3 import ipv4_icmp_echo
-from macsec_lab.macsec import SecTAG, parse_frame, protect_frame
+from macsec_lab.macsec import SecTAG, XpnPnTracker, parse_frame, protect_frame
 from macsec_lab.dissect import dissect_eap, dissect_macsec, dissect_mka
 from macsec_lab.mka import parse_eapol_mka
 from macsec_lab.scenario import (
+    XPN_INITIAL_PN64_HIGH,
     ieee_encrypt_frame,
     ieee_integrity_frame,
     ieee256_encrypt_frame,
@@ -42,6 +52,7 @@ from macsec_lab.scenario import (
     mka_co30,
     mka_handshake,
     mka_rekey,
+    mka_xpn,
 )
 
 
@@ -357,6 +368,101 @@ class EapDerivedCak(unittest.TestCase):
                 self.assertEqual(p["unwrapped_sak"], keys.sak)
                 saw_sak = True
         self.assertTrue(saw_sak)
+
+
+class XpnStory(unittest.TestCase):
+    """SAK#4 as GCM-AES-XPN-128: cipher-suite ID in Distributed SAK, SSCI/Salt
+    nonce, and a PN64 crossing 2^32 with the on-wire PN wrapping."""
+
+    def test_xpn_distributed_sak_carries_cipher_suite_id(self) -> None:
+        keys = LabKeys.default()
+        self.assertTrue(keys.sak4)
+        p = parse_eapol_mka(mka_xpn(keys)[0][1], keys.ick, keys.kek)
+        self.assertTrue(p["icv_ok"])
+        ds = next(s["body"] for s in p["param_sets"] if s["code"] == 4)
+        self.assertEqual(ds.cipher_suite, CS_GCM_AES_XPN_128)
+        self.assertEqual((ds.an, ds.kn), (3, 4))
+        self.assertEqual(p["unwrapped_sak"], keys.sak4)
+        # Non-default suite -> 8-octet ID rides along: body 28 becomes 36.
+        raw_ps = ds.pack()
+        self.assertEqual(int.from_bytes(raw_ps[2:4], "big") & 0x0FFF, 36)
+        self.assertEqual(len(ds.wrapped_sak), 24, "128-bit SAK + 8-octet wrap")
+        # Default-suite stories omit the ID (body stays 28).
+        d0 = next(
+            s["body"] for s in parse_eapol_mka(mka_handshake(keys)[2][1], keys.ick)["param_sets"]
+            if s["code"] == 4
+        )
+        self.assertIsNone(d0.cipher_suite)
+        self.assertEqual(int.from_bytes(d0.pack()[2:4], "big") & 0x0FFF, 28)
+
+    def test_xpn_default_salt_and_ssci_assignment(self) -> None:
+        keys = LabKeys.default()
+        salt = xpn_default_salt(keys.a.sci)
+        self.assertEqual(len(salt), 12)
+        xor = bytes(a ^ b for a, b in zip(keys.a.sci[:4], keys.a.sci[4:]))
+        self.assertEqual(salt, xor + keys.a.sci)
+        # Deterministic rule: largest SCI gets 0x0001, next 0x0002.
+        ssci = assign_sscis([keys.a.sci, keys.b.sci])
+        self.assertEqual(ssci[keys.b.sci], 0x0001)  # node-b SCI is larger
+        self.assertEqual(ssci[keys.a.sci], 0x0002)
+        # Peer-list SSCI LSB byte is non-zero in the XPN story (0 in others).
+        xpn = parse_eapol_mka(mka_xpn(keys)[1][1], keys.ick)
+        live = next(s for s in xpn["param_sets"] if s["code"] == 1)
+        self.assertEqual(live["ssci"], 0x01)  # B's own SSCI LSB
+        psk = parse_eapol_mka(mka_handshake(keys)[1][1], keys.ick)
+        self.assertEqual(next(s for s in psk["param_sets"] if s["code"] == 2)["ssci"], 0)
+
+    def test_xpn_data_wraps_2pow32_and_recovers(self) -> None:
+        keys = LabKeys.default()
+        ssci = assign_sscis([keys.a.sci, keys.b.sci])
+        salt = xpn_default_salt(keys.a.sci)
+        data = [(c, r) for c, r in mka_xpn(keys) if int.from_bytes(r[12:14], "big") == 0x88E5]
+        self.assertEqual(len(data), 3)
+        # On-wire PN is only the low 32 bits: ...FE+1 wraps to 1.
+        self.assertEqual([int.from_bytes(r[16:20], "big") for _, r in data], [0xFFFFFFFF, 1, 3])
+        # Receiver-side recovery (what analyze.py does): per-direction trackers.
+        trackers = {
+            keys.a.mac: XpnPnTracker(high=XPN_INITIAL_PN64_HIGH),
+            keys.b.mac: XpnPnTracker(high=XPN_INITIAL_PN64_HIGH),
+        }
+        expected = [0x1FFFFFFFF, 0x200000001, 0x100000003]
+        for (comment, raw), want_pn64 in zip(data, expected):
+            src = raw[6:12]
+            pn64 = trackers[src].update(int.from_bytes(raw[16:20], "big"))
+            self.assertEqual(pn64, want_pn64, comment)
+            iv = xpn_iv(ssci[keys.a.sci if src == keys.a.mac else keys.b.sci], pn64, salt)
+            p = parse_frame(raw, keys.sak4, keys.a.sci if src == keys.a.mac else keys.b.sci, iv=iv)
+            self.assertTrue(p["icv_ok"], comment)
+            self.assertEqual(p["user_data"][:2], b"\x08\x00", comment)
+            self.assertEqual(p["tag"].an, 3, comment)
+            # Wrong salt (or wrong SSCI) -> different nonce -> ICV fails.
+            bad = parse_frame(raw, keys.sak4, iv=xpn_iv(1, pn64, bytes(12)))
+            self.assertFalse(bad["icv_ok"], comment)
+
+    def test_xpn_frame_tamper_breaks_icv(self) -> None:
+        keys = LabKeys.default()
+        _, raw = next(
+            (c, r) for c, r in mka_xpn(keys) if int.from_bytes(r[12:14], "big") == 0x88E5
+        )
+        pn64 = (XPN_INITIAL_PN64_HIGH << 32) | 0xFFFFFFFF
+        iv = xpn_iv(assign_sscis([keys.a.sci, keys.b.sci])[keys.a.sci], pn64, xpn_default_salt(keys.a.sci))
+        tampered = bytearray(raw)
+        tampered[-1] ^= 0x01  # flip one ICV bit
+        self.assertFalse(parse_frame(bytes(tampered), keys.sak4, keys.a.sci, iv=iv)["icv_ok"])
+
+    def test_pn_tracker_wrap_vs_reorder(self) -> None:
+        t = XpnPnTracker(high=1)
+        self.assertEqual(t.update(0xFFFFFFFE), 0x1FFFFFFFE)
+        self.assertEqual(t.update(0xFFFFFFFF), 0x1FFFFFFFF)
+        # Big backwards jump = wrap: high half increments.
+        self.assertEqual(t.update(0x00000001), 0x200000001)
+        # Small backwards step = reordering, not a wrap.
+        t2 = XpnPnTracker(high=2, last_low=0x00000100)
+        self.assertEqual(t2.update(0x00000080), 0x200000080)
+        with self.assertRaises(ValueError):
+            XpnPnTracker().update(0)  # PN starts at 1
+        with self.assertRaises(ValueError):
+            XpnPnTracker(high=2**32)
 
 
 if __name__ == "__main__":

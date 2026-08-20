@@ -103,3 +103,28 @@ def xpn_iv(ssci: int, pn64: int, salt: bytes) -> bytes:
         raise ValueError("XPN salt must be 96 bits")
     iv = ssci.to_bytes(4, "big") + pn64.to_bytes(8, "big")
     return bytes(a ^ b for a, b in zip(iv, salt))
+
+
+def xpn_default_salt(ks_sci: bytes) -> bytes:
+    """Default XPN salt derived from the Key Server SCI (802.1AEbw-2013):
+    Salt[0:4] = SCI[0:4] XOR SCI[4:8], Salt[4:12] = the KS SCI itself.
+
+    The salt is public material — it decorrelates the nonce from the default
+    SCI||PN construction; it is not a second key.
+    """
+    if len(ks_sci) != 8:
+        raise ValueError("SCI must be 64 bits")
+    xor = bytes(a ^ b for a, b in zip(ks_sci[:4], ks_sci[4:]))
+    return xor + ks_sci
+
+
+def assign_sscis(scis: list[bytes]) -> dict[bytes, int]:
+    """Default SSCI assignment (802.1AEbw-2013): order the SCIs by value,
+    largest SCI gets SSCI 0x0001, next 0x0002, and so on.
+
+    Deterministic on both sides, so peers agree without signaling.
+    """
+    out: dict[bytes, int] = {}
+    for i, sci in enumerate(sorted(scis, reverse=True), 1):
+        out[sci] = i
+    return out

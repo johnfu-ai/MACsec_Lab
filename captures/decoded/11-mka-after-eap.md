@@ -65,7 +65,7 @@
 | 14 | 1 | `03` | EAPOL Version | `3` | 3 = 802.1X-2010 |
 | 15 | 1 | `05` | EAPOL Type | `5` | 5 = EAPOL-MKA（不是 6） |
 | 16 | 2 | `0040` | Packet Body Length | `64` | 含 ICV，不含以太网头 |
-| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type |
+| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type；2 = 802.1X-2010，3 = 802.1X-2020（XPN 的 KS SSCI 字段随 v3 出现） |
 | 19 | 1 | `00` | Key Server Priority | `0` | 数值越小越优先 |
 | 20 | 2 | `f02c` | KS/Desired/Cap + BodyLen | `0xf02c` | KS=1 Desired=1 Cap=3(完整性+机密性，offset 0/30/50) body_len=44 |
 | 22 | 8 | `02000000000a0001` | SCI | `02000000000a0001` | MAC ‖ Port ID |
@@ -105,7 +105,7 @@
 | 14 | 1 | `03` | EAPOL Version | `3` | 3 = 802.1X-2010 |
 | 15 | 1 | `05` | EAPOL Type | `5` | 5 = EAPOL-MKA（不是 6） |
 | 16 | 2 | `0054` | Packet Body Length | `84` | 含 ICV，不含以太网头 |
-| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type |
+| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type；2 = 802.1X-2010，3 = 802.1X-2020（XPN 的 KS SSCI 字段随 v3 出现） |
 | 19 | 1 | `ff` | Key Server Priority | `255` | 数值越小越优先 |
 | 20 | 2 | `702c` | KS/Desired/Cap + BodyLen | `0x702c` | KS=0 Desired=1 Cap=3(完整性+机密性，offset 0/30/50) body_len=44 |
 | 22 | 8 | `02000000000b0001` | SCI | `02000000000b0001` | MAC ‖ Port ID |
@@ -114,7 +114,7 @@
 | 46 | 4 | `0080c201` | Algorithm Agility | `0080c201` | 00-80-C2-01 = 802.1X-2010 AES-CMAC |
 | 50 | 16 | `3a4c35b14d5ffb90dd69687cf15fac47` | CKN | `3a4c35b14d5ffb90dd69687cf15fac47` | EAP-derived CKN (KDF); both sides must match |
 | 66 | 1 | `02` | Param type | `2` | Potential Peer List |
-| 67 | 1 | `00` | KS SSCI LSB | `0` | 非 XPN 时为 0 |
+| 67 | 1 | `00` | KS SSCI LSB | `0x00` | XPN：发送方 SC 的 SSCI 低位（默认分配：SCI 最大者 0x0001）；非 XPN 时为 0 |
 | 68 | 2 | `0010` | Body length | `16` |  |
 | 70 | 12 | `cc01cc02cc03cc04cc05cc06` | Peer 1 MI | `cc01cc02cc03cc04cc05cc06` | 对端成员标识 |
 | 82 | 4 | `00000001` | Peer 1 MN | `1` | 对端已确认的报文号 |
@@ -151,7 +151,7 @@
 | 14 | 1 | `03` | EAPOL Version | `3` | 3 = 802.1X-2010 |
 | 15 | 1 | `05` | EAPOL Type | `5` | 5 = EAPOL-MKA（不是 6） |
 | 16 | 2 | `00a0` | Packet Body Length | `160` | 含 ICV，不含以太网头 |
-| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type |
+| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type；2 = 802.1X-2010，3 = 802.1X-2020（XPN 的 KS SSCI 字段随 v3 出现） |
 | 19 | 1 | `00` | Key Server Priority | `0` | 数值越小越优先 |
 | 20 | 2 | `f02c` | KS/Desired/Cap + BodyLen | `0xf02c` | KS=1 Desired=1 Cap=3(完整性+机密性，offset 0/30/50) body_len=44 |
 | 22 | 8 | `02000000000a0001` | SCI | `02000000000a0001` | MAC ‖ Port ID |
@@ -161,7 +161,7 @@
 | 50 | 16 | `3a4c35b14d5ffb90dd69687cf15fac47` | CKN | `3a4c35b14d5ffb90dd69687cf15fac47` | EAP-derived CKN (KDF); both sides must match |
 | 66 | 1 | `04` | Param type | `4` | Distributed SAK |
 | 67 | 1 | `00` | AN + Conf. offset | `0x00` | AN=0 offset_code=0 (→前 0 字节不加密) |
-| 68 | 2 | `001c` | Body length | `28` | 28 = 默认 GCM-AES-128 |
+| 68 | 2 | `001c` | Body length | `28` | 28 = 默认 GCM-AES-128（省略套件 ID）；36 = 128-bit SAK + 套件 ID；52 = 256-bit SAK + 套件 ID |
 | 70 | 4 | `00000001` | Key Number | `1` | 本把 SAK 的编号 |
 | 74 | 24 | `ea420ced1f518e6eb7c2c4ecd6d29360b4122cde79692275` | AES-KW(SAK) | `ea420ced1f518e6eb7c2c4ecd6d29360b4122cde79692275` | AES-KeyWrap(KEK, SAK)，24 B = 16 B SAK + 8 B wrap IV；解开 = b1b2b3b4b5b6b7b8b9babbbcbdbebfc0 |
 | 98 | 1 | `03` | Param type | `3` | MACsec SAK Use |
@@ -174,7 +174,7 @@
 | 134 | 4 | `00000000` | Old KN | `0` |  |
 | 138 | 4 | `00000001` | Old lowest PN | `1` |  |
 | 142 | 1 | `01` | Param type | `1` | Live Peer List |
-| 143 | 1 | `00` | KS SSCI LSB | `0` | 非 XPN 时为 0 |
+| 143 | 1 | `00` | KS SSCI LSB | `0x00` | XPN：发送方 SC 的 SSCI 低位（默认分配：SCI 最大者 0x0001）；非 XPN 时为 0 |
 | 144 | 2 | `0010` | Body length | `16` |  |
 | 146 | 12 | `dd01dd02dd03dd04dd05dd06` | Peer 1 MI | `dd01dd02dd03dd04dd05dd06` | 对端成员标识 |
 | 158 | 4 | `00000001` | Peer 1 MN | `1` | 对端已确认的报文号 |
@@ -216,7 +216,7 @@
 | 14 | 1 | `03` | EAPOL Version | `3` | 3 = 802.1X-2010 |
 | 15 | 1 | `05` | EAPOL Type | `5` | 5 = EAPOL-MKA（不是 6） |
 | 16 | 2 | `0080` | Packet Body Length | `128` | 含 ICV，不含以太网头 |
-| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type |
+| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type；2 = 802.1X-2010，3 = 802.1X-2020（XPN 的 KS SSCI 字段随 v3 出现） |
 | 19 | 1 | `ff` | Key Server Priority | `255` | 数值越小越优先 |
 | 20 | 2 | `702c` | KS/Desired/Cap + BodyLen | `0x702c` | KS=0 Desired=1 Cap=3(完整性+机密性，offset 0/30/50) body_len=44 |
 | 22 | 8 | `02000000000b0001` | SCI | `02000000000b0001` | MAC ‖ Port ID |
@@ -234,7 +234,7 @@
 | 102 | 4 | `00000000` | Old KN | `0` |  |
 | 106 | 4 | `00000001` | Old lowest PN | `1` |  |
 | 110 | 1 | `01` | Param type | `1` | Live Peer List |
-| 111 | 1 | `00` | KS SSCI LSB | `0` | 非 XPN 时为 0 |
+| 111 | 1 | `00` | KS SSCI LSB | `0x00` | XPN：发送方 SC 的 SSCI 低位（默认分配：SCI 最大者 0x0001）；非 XPN 时为 0 |
 | 112 | 2 | `0010` | Body length | `16` |  |
 | 114 | 12 | `cc01cc02cc03cc04cc05cc06` | Peer 1 MI | `cc01cc02cc03cc04cc05cc06` | 对端成员标识 |
 | 126 | 4 | `00000002` | Peer 1 MN | `2` | 对端已确认的报文号 |
@@ -274,7 +274,7 @@
 | 14 | 1 | `03` | EAPOL Version | `3` | 3 = 802.1X-2010 |
 | 15 | 1 | `05` | EAPOL Type | `5` | 5 = EAPOL-MKA（不是 6） |
 | 16 | 2 | `0080` | Packet Body Length | `128` | 含 ICV，不含以太网头 |
-| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type |
+| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type；2 = 802.1X-2010，3 = 802.1X-2020（XPN 的 KS SSCI 字段随 v3 出现） |
 | 19 | 1 | `00` | Key Server Priority | `0` | 数值越小越优先 |
 | 20 | 2 | `f02c` | KS/Desired/Cap + BodyLen | `0xf02c` | KS=1 Desired=1 Cap=3(完整性+机密性，offset 0/30/50) body_len=44 |
 | 22 | 8 | `02000000000a0001` | SCI | `02000000000a0001` | MAC ‖ Port ID |
@@ -292,7 +292,7 @@
 | 102 | 4 | `00000000` | Old KN | `0` |  |
 | 106 | 4 | `00000001` | Old lowest PN | `1` |  |
 | 110 | 1 | `01` | Param type | `1` | Live Peer List |
-| 111 | 1 | `00` | KS SSCI LSB | `0` | 非 XPN 时为 0 |
+| 111 | 1 | `00` | KS SSCI LSB | `0x00` | XPN：发送方 SC 的 SSCI 低位（默认分配：SCI 最大者 0x0001）；非 XPN 时为 0 |
 | 112 | 2 | `0010` | Body length | `16` |  |
 | 114 | 12 | `dd01dd02dd03dd04dd05dd06` | Peer 1 MI | `dd01dd02dd03dd04dd05dd06` | 对端成员标识 |
 | 126 | 4 | `00000002` | Peer 1 MN | `2` | 对端已确认的报文号 |
@@ -332,7 +332,7 @@
 | 14 | 1 | `03` | EAPOL Version | `3` | 3 = 802.1X-2010 |
 | 15 | 1 | `05` | EAPOL Type | `5` | 5 = EAPOL-MKA（不是 6） |
 | 16 | 2 | `0080` | Packet Body Length | `128` | 含 ICV，不含以太网头 |
-| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type |
+| 18 | 1 | `02` | MKA Version | `2` | Basic 第 1 字节是版本不是 type；2 = 802.1X-2010，3 = 802.1X-2020（XPN 的 KS SSCI 字段随 v3 出现） |
 | 19 | 1 | `ff` | Key Server Priority | `255` | 数值越小越优先 |
 | 20 | 2 | `702c` | KS/Desired/Cap + BodyLen | `0x702c` | KS=0 Desired=1 Cap=3(完整性+机密性，offset 0/30/50) body_len=44 |
 | 22 | 8 | `02000000000b0001` | SCI | `02000000000b0001` | MAC ‖ Port ID |
@@ -350,7 +350,7 @@
 | 102 | 4 | `00000000` | Old KN | `0` |  |
 | 106 | 4 | `00000001` | Old lowest PN | `1` |  |
 | 110 | 1 | `01` | Param type | `1` | Live Peer List |
-| 111 | 1 | `00` | KS SSCI LSB | `0` | 非 XPN 时为 0 |
+| 111 | 1 | `00` | KS SSCI LSB | `0x00` | XPN：发送方 SC 的 SSCI 低位（默认分配：SCI 最大者 0x0001）；非 XPN 时为 0 |
 | 112 | 2 | `0010` | Body length | `16` |  |
 | 114 | 12 | `cc01cc02cc03cc04cc05cc06` | Peer 1 MI | `cc01cc02cc03cc04cc05cc06` | 对端成员标识 |
 | 126 | 4 | `00000003` | Peer 1 MN | `3` | 对端已确认的报文号 |

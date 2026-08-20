@@ -14,7 +14,8 @@ The current WSL2 kernel reports `# CONFIG_MACSEC is not set`. Docker containers 
 - PSK CAK (static CKN/CAK), point-to-point CA, GCM-AES-128
 - MKA: Basic, Potential/Live Peer List, Distributed SAK, SAK Use, 16-octet ICV
 - MACsec: SecTAG with and without explicit SCI, confidentiality and integrity-only
-- Out of scope: EAP-derived CAK, GCM-AES-XPN, GCM-AES-256 data plane in the lab story (vectors for 256 exist in the IEEE PDF only), MKA announcements, VLAN-in-clear
+- Added after the initial spec (each with its own capture): EAP-derived CAK/CKN from the MSK, SAK rekey (AN/KN rotation), confidentiality offset 30, GCM-AES-256 IEEE vectors, and the GCM-AES-XPN-128 story (`mka-xpn.pcap`: cipher-suite ID in Distributed SAK, SSCI/Salt nonce, PN64 across 2^32). XPN is construction-level only — the public draft leaves the Annex C ICVs blank, so there is no byte-exact vector to check against.
+- Out of scope: MKA announcements, VLAN-in-clear, XPN-256 data plane (same construction as XPN-128 with a 32-octet SAK)
 
 ## Deliverables
 1. `captures/*.pcap` + `keys.json`
