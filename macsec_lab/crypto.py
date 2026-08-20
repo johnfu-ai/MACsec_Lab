@@ -87,3 +87,19 @@ def gcm_protect(key: bytes, iv: bytes, aad: bytes, plaintext: bytes) -> tuple[by
 def gcm_validate(key: bytes, iv: bytes, aad: bytes, ciphertext: bytes, icv: bytes) -> bytes:
     """Return plaintext (empty for integrity-only). Raises on ICV failure."""
     return AESGCM(key).decrypt(iv, ciphertext + icv, aad)
+
+
+def xpn_iv(ssci: int, pn64: int, salt: bytes) -> bytes:
+    """802.1AEbw-2013 XPN nonce: IV = (SSCI(32) || PN(64)) XOR Salt(96).
+
+    The SecTAG PN field still carries only the low 32 bits of pn64; the
+    receiver recovers the high 32 bits from SA state (802.1AE 10.6).
+    """
+    if not 0 <= ssci <= 0xFFFFFFFF:
+        raise ValueError("SSCI is 32 bits")
+    if not 0 <= pn64 <= 0xFFFFFFFFFFFFFFFF:
+        raise ValueError("PN is 64 bits in XPN")
+    if len(salt) != 12:
+        raise ValueError("XPN salt must be 96 bits")
+    iv = ssci.to_bytes(4, "big") + pn64.to_bytes(8, "big")
+    return bytes(a ^ b for a, b in zip(iv, salt))

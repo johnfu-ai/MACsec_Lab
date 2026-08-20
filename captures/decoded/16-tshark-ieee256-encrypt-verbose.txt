@@ -1,0 +1,47 @@
+Frame 1: Packet, 92 bytes on wire (736 bits), 92 bytes captured (736 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:20.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:20.000000000 UTC
+    Epoch Arrival Time: 1700000000.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time since reference or first frame: 0.000000000 seconds]
+    Frame Number: 1
+    Frame Length: 92 bytes (736 bits)
+    Capture Length: 92 bytes (736 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:macsec:data]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 7a:0d:46:df:99:8d (7a:0d:46:df:99:8d), Dst: d6:09:b1:f0:56:63 (d6:09:b1:f0:56:63)
+    Destination: d6:09:b1:f0:56:63 (d6:09:b1:f0:56:63)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Source: 7a:0d:46:df:99:8d (7a:0d:46:df:99:8d)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1AE (MACsec) (0x88e5)
+    [Stream index: 0]
+802.1AE Security Tag
+    0010 11.. = TCI: 0x0b, VER: 0x0, SC, E, C
+        0... .... = VER: 0x0
+        .0.. .... = ES: Not set
+        ..1. .... = SC: Set
+        ...0 .... = SCB: Not set
+        .... 1... = E: Set
+        .... .1.. = C: Set
+    .... ..10 = AN: 0x2
+    Short length: 0
+    Packet number: 2999092325
+    System Identifier: 12:15:35:24:c0:89 (12:15:35:24:c0:89)
+    Port Identifier: 24193
+    ICV: 5ca597cdbb3edb8d1a1151ea0af7b436
+    [Verification Info]
+        [Frame Verification Successful: False]
+Data (48 bytes)
+
+0000  e2 00 6e b4 2f 52 77 02 2d 9b 19 92 5b c4 19 d7   ..n./Rw.-...[...
+0010  a5 92 66 6c 92 5f e2 ef 71 8e b4 e3 08 ef ea a7   ..fl._..q.......
+0020  c5 27 3b 39 41 18 86 0a 5b e2 a9 7f 56 ab 78 36   .';9A...[...V.x6
+    Data: e2006eb42f5277022d9b19925bc419d7a592666c925fe2ef718eb4e308efeaa7c5273b394118860a5be2a97f56ab7836
+    [Length: 48]
+

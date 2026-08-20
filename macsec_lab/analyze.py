@@ -18,6 +18,7 @@ from .keys import (
     ETHERTYPE_EAPOL,
     ETHERTYPE_MACSEC,
     IEEE_GCM_KEY_128,
+    IEEE_GCM_KEY_256,
     IEEE_SCI,
     LabKeys,
     Peer,
@@ -303,6 +304,8 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         ("mka-after-eap.pcap", "eap", "11-mka-after-eap.md"),
         ("mka-rekey.pcap", "rekey", "13-mka-rekey.md"),
         ("mka-co30.pcap", "co30", "14-mka-co30.md"),
+        ("macsec-ieee-gcm-aes-256-integrity.pcap", "ieee256", "15-ieee-integrity-256.md"),
+        ("macsec-ieee-gcm-aes-256-encrypt.pcap", "ieee256", "16-ieee-encrypt-256.md"),
     ]
     session_text = ""
     for pcap_name, kind, report_name in jobs:
@@ -312,6 +315,8 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         comments = _comments(capture_dir, pcap_name)
         if kind == "ieee":
             text = analyze_pcap(pcap, keys, comments, sak=IEEE_GCM_KEY_128, sci_a=IEEE_SCI, sci_b=IEEE_SCI)
+        elif kind == "ieee256":
+            text = analyze_pcap(pcap, keys, comments, sak=IEEE_GCM_KEY_256, sci_a=IEEE_SCI, sci_b=IEEE_SCI)
         elif kind == "eap":
             eap_keys = _load_eap_keys(capture_dir)
             text = analyze_pcap(pcap, eap_keys, comments)

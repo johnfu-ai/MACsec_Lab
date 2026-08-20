@@ -10,6 +10,8 @@ from .pcap import PcapPacket, pad_ethernet, write_pcap
 from .scenario import (
     ieee_encrypt_frame,
     ieee_integrity_frame,
+    ieee256_encrypt_frame,
+    ieee256_integrity_frame,
     macsec_lab_data,
     mka_after_eap,
     mka_co30,
@@ -41,6 +43,8 @@ def generate(out_dir: Path) -> dict[str, Path]:
     integ = macsec_lab_data(keys, encrypt=False)
     ieee_i = [("IEEE GCM-AES-128 integrity-only test vector", ieee_integrity_frame())]
     ieee_e = [("IEEE GCM-AES-128 confidentiality test vector", ieee_encrypt_frame())]
+    ieee_i256 = [("IEEE GCM-AES-256 integrity-only test vector (Randall 2.1.2)", ieee256_integrity_frame())]
+    ieee_e256 = [("IEEE GCM-AES-256 confidentiality test vector (Randall 2.2.2)", ieee256_encrypt_frame())]
     full = mka + enc
 
     mapping = {
@@ -52,6 +56,8 @@ def generate(out_dir: Path) -> dict[str, Path]:
         "macsec-lab-integrity-only.pcap": integ,
         "macsec-ieee-gcm-aes-128-integrity.pcap": ieee_i,
         "macsec-ieee-gcm-aes-128-encrypt.pcap": ieee_e,
+        "macsec-ieee-gcm-aes-256-integrity.pcap": ieee_i256,
+        "macsec-ieee-gcm-aes-256-encrypt.pcap": ieee_e256,
         "session-full.pcap": full,
     }
     written: dict[str, Path] = {}

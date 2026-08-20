@@ -17,6 +17,7 @@ from .keys import (
     IEEE_SA,
     IEEE_SCI,
     IEEE_GCM_KEY_128,
+    IEEE_GCM_KEY_256,
     LabKeys,
 )
 from .l3 import ipv4_icmp_echo
@@ -383,3 +384,15 @@ def ieee_integrity_frame() -> bytes:
 def ieee_encrypt_frame() -> bytes:
     tag = SecTAG(tci=0x2E, sl=0, pn=IEEE_PN, sci=IEEE_SCI)
     return protect_frame(IEEE_DA, IEEE_SA, IEEE_ENC_USER, IEEE_GCM_KEY_128, tag, IEEE_SCI)
+
+
+def ieee256_integrity_frame() -> bytes:
+    """Same 54-byte frame as the 128-bit vector, but GCM-AES-256 (Randall 2.1.2)."""
+    tag = SecTAG(tci=0x22, sl=0x2A, pn=IEEE_PN, sci=IEEE_SCI)
+    return protect_frame(IEEE_DA, IEEE_SA, IEEE_INT_USER, IEEE_GCM_KEY_256, tag, IEEE_SCI)
+
+
+def ieee256_encrypt_frame() -> bytes:
+    """Same 60-byte frame as the 128-bit vector, but GCM-AES-256 (Randall 2.2.2)."""
+    tag = SecTAG(tci=0x2E, sl=0, pn=IEEE_PN, sci=IEEE_SCI)
+    return protect_frame(IEEE_DA, IEEE_SA, IEEE_ENC_USER, IEEE_GCM_KEY_256, tag, IEEE_SCI)

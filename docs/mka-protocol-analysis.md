@@ -64,7 +64,7 @@ Body length 是 12 bit，占用 octet 3 的低 4 bit + octet 4。Basic 固定部
 | Key Number | 1 |
 | AES-KeyWrap(KEK, SAK) | 24 字节（16 字节 SAK + 8 字节 wrap IV） |
 
-默认套件 GCM-AES-128 **不**再带 8 字节 Cipher Suite ID（body length=28）。其它套件走 Figure 11-12。
+默认套件 GCM-AES-128 **不**再带 8 字节 Cipher Suite ID（body length=28）。其它套件（GCM-AES-256 / XPN-128 / XPN-256）带 8 字节 ID（body length=36），对照表见 [cipher-suites.md](cipher-suites.md)。
 
 ### SAK Use（type 3）
 

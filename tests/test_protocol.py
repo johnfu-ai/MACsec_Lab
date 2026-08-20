@@ -9,15 +9,19 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from macsec_lab.crypto import derive_eap_cak, derive_eap_ckn
+from macsec_lab.crypto import derive_eap_cak, derive_eap_ckn, gcm_protect, gcm_validate, xpn_iv
 from macsec_lab.keys import (
     EAPOL_TYPE_EAP,
     IEEE_DA,
     IEEE_ENC_CT_128,
+    IEEE_ENC_CT_256,
     IEEE_ENC_ICV_128,
+    IEEE_ENC_ICV_256,
     IEEE_ENC_USER,
     IEEE_GCM_KEY_128,
+    IEEE_GCM_KEY_256,
     IEEE_INT_ICV_128,
+    IEEE_INT_ICV_256,
     IEEE_INT_USER,
     IEEE_PN,
     IEEE_SA,
@@ -31,6 +35,8 @@ from macsec_lab.mka import parse_eapol_mka
 from macsec_lab.scenario import (
     ieee_encrypt_frame,
     ieee_integrity_frame,
+    ieee256_encrypt_frame,
+    ieee256_integrity_frame,
     macsec_lab_data,
     mka_after_eap,
     mka_co30,
@@ -62,6 +68,62 @@ class IeeeVectors(unittest.TestCase):
         self.assertEqual(parsed["user_data"], IEEE_ENC_USER)
         self.assertEqual(parsed["tag"].pn, IEEE_PN)
         self.assertEqual(parsed["sci"], IEEE_SCI)
+
+
+class IeeeVectors256(unittest.TestCase):
+    """Same published frames, 256-bit key (Randall 2.1.2 / 2.2.2)."""
+
+    def test_integrity_only_icv_256(self) -> None:
+        frame = ieee256_integrity_frame()
+        self.assertEqual(frame[-16:], IEEE_INT_ICV_256)
+        parsed = parse_frame(frame, IEEE_GCM_KEY_256)
+        self.assertTrue(parsed["icv_ok"])
+        self.assertEqual(parsed["user_data"], IEEE_INT_USER)
+        # Same frame, wrong key size -> cannot validate
+        self.assertFalse(parse_frame(frame, IEEE_GCM_KEY_128)["icv_ok"])
+
+    def test_confidentiality_ct_and_icv_256(self) -> None:
+        frame = ieee256_encrypt_frame()
+        tag, n = SecTAG.unpack(frame[14:])
+        self.assertEqual(frame[14 + n : -16], IEEE_ENC_CT_256)
+        self.assertEqual(frame[-16:], IEEE_ENC_ICV_256)
+        parsed = parse_frame(frame, IEEE_GCM_KEY_256)
+        self.assertTrue(parsed["icv_ok"])
+        self.assertEqual(parsed["user_data"], IEEE_ENC_USER)
+
+
+class XpnIv(unittest.TestCase):
+    """XPN nonce construction (802.1AEbw-2013): IV = (SSCI || PN64) XOR Salt."""
+
+    SALT = bytes.fromhex("e630e81a48df000000000000")  # Randall draft C-11 salt + zeros
+    SSCI = 0x0001
+    PN64 = 0xB0DF459C_B2C28465  # 32 MSBs from the draft + the SecTAG PN
+
+    def test_iv_layout_and_xor(self) -> None:
+        iv = xpn_iv(self.SSCI, self.PN64, self.SALT)
+        self.assertEqual(len(iv), 12)
+        raw = self.SSCI.to_bytes(4, "big") + self.PN64.to_bytes(8, "big")
+        self.assertEqual(iv, bytes(a ^ b for a, b in zip(raw, self.SALT)))
+        # Low 32 bits of PN64 are what the SecTAG carries
+        self.assertEqual(self.PN64 & 0xFFFFFFFF, IEEE_PN)
+
+    def test_xpn_gcm_roundtrip_and_salt_sensitivity(self) -> None:
+        iv = xpn_iv(self.SSCI, self.PN64, self.SALT)
+        aad = IEEE_DA + IEEE_SA + b"\x88\xe5" + SecTAG(tci=0x2E, sl=0, pn=IEEE_PN, sci=IEEE_SCI).pack()
+        ct, icv = gcm_protect(IEEE_GCM_KEY_128, iv, aad, IEEE_ENC_USER)
+        self.assertEqual(gcm_validate(IEEE_GCM_KEY_128, iv, aad, ct, icv), IEEE_ENC_USER)
+        other = xpn_iv(self.SSCI, self.PN64, bytes(12))
+        self.assertNotEqual(iv, other, "salt must change the nonce")
+        with self.assertRaises(Exception):
+            gcm_validate(IEEE_GCM_KEY_128, other, aad, ct, icv)
+
+    def test_xpn_iv_rejects_bad_sizes(self) -> None:
+        with self.assertRaises(ValueError):
+            xpn_iv(2**32, 1, bytes(12))
+        with self.assertRaises(ValueError):
+            xpn_iv(1, 2**64, bytes(12))
+        with self.assertRaises(ValueError):
+            xpn_iv(1, 1, bytes(11))
 
 
 class LabRoundTrip(unittest.TestCase):

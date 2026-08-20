@@ -32,9 +32,11 @@ if command -v tshark >/dev/null; then
     ans=$(tshark -r captures/mka-rekey.pcap -Y macsec -T fields -e macsec.AN 2>/dev/null | sort -u | wc -l)
     check 8/9 "tshark sees rekey story with 2 ANs (got ${ans})" test "${ans}" -ge 2
     co=$(tshark -r captures/mka-co30.pcap -Y "mka.confidentiality_offset == 1" -T fields -e frame.number 2>/dev/null | wc -l)
-    check 9/9 "tshark sees co30 signaled in Distributed SAK (got ${co})" test "${co}" -ge 1
+    check 9/10 "tshark sees co30 signaled in Distributed SAK (got ${co})" test "${co}" -ge 1
+    ieee256=$(tshark -r captures/macsec-ieee-gcm-aes-256-encrypt.pcap -Y macsec -T fields -e frame.number 2>/dev/null | wc -l)
+    check 10/10 "tshark sees IEEE 256-bit vector (got ${ieee256})" test "${ieee256}" -ge 1
 else
-    echo "[SKIP] 4-9 tshark not installed"
+    echo "[SKIP] 4-10 tshark not installed"
 fi
 
 if [[ "${fail}" -eq 0 ]]; then

@@ -57,6 +57,12 @@
   "macsec-ieee-gcm-aes-128-encrypt.pcap": [
     "IEEE GCM-AES-128 confidentiality test vector"
   ],
+  "macsec-ieee-gcm-aes-256-integrity.pcap": [
+    "IEEE GCM-AES-256 integrity-only test vector (Randall 2.1.2)"
+  ],
+  "macsec-ieee-gcm-aes-256-encrypt.pcap": [
+    "IEEE GCM-AES-256 confidentiality test vector (Randall 2.2.2)"
+  ],
   "session-full.pcap": [
     "A MN=1 hello (claim Key Server, no peers yet)",
     "B MN=1 hello (saw A; Potential Peer List; not Key Server)",

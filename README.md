@@ -109,7 +109,8 @@ make verify      # 测试 + tshark 能否认出 mka / macsec
 | `captures/mka-rekey.pcap`                 | SAK 重加密：AN=0 → AN=1，双 SA 并存 → 旧钥退役（[docs/lifecycle.md](docs/lifecycle.md)） |
 | `captures/macsec-lab-encrypted.pcap`      | 实验室 GCM-AES-128，载荷加密                       |
 | `captures/macsec-lab-integrity-only.pcap` | 同一 ICMP，`E=0 C=0`，内层 IPv4 明文可见             |
-| `captures/macsec-ieee-gcm-aes-128-*.pcap` | IEEE 公布的 GCM 测试向量                          |
+| `captures/macsec-ieee-gcm-aes-128-*.pcap` | IEEE 公布的 GCM 测试向量（128-bit key）               |
+| `captures/macsec-ieee-gcm-aes-256-*.pcap` | 同一帧换 256-bit key 的 IEEE 向量（Randall §2.1.2/§2.2.2） |
 | `captures/session-full.pcap`              | PSK MKA + 加密数据面，一条故事线                      |
 | `captures/keys.json`                      | 演示 PSK CAK 与 EAP 派生 CAK / CKN / SAK（含重加密 SAK#2）/ KEK / ICK |
 
@@ -143,6 +144,7 @@ Key Server 随机生成 SAK  →  AES-KW(KEK, SAK) 经 MKA 分发  →  SecY GCM
 
 - [docs/key-hierarchy.md](docs/key-hierarchy.md) — CAK / CKN / KEK / ICK / SAK 是什么、怎么生成
 - [docs/lifecycle.md](docs/lifecycle.md) — 换钥（rekey）、AN/KN、PN 耗尽、重放窗口、Delay Protect、判死
+- [docs/cipher-suites.md](docs/cipher-suites.md) — GCM-AES-128/256/XPN 四套件对照、协商、XPN nonce 构造
 - [docs/protocol-analysis.md](docs/protocol-analysis.md) — **每一条消息的偏移级解析**（session-full）
 - [docs/mka-protocol-analysis.md](docs/mka-protocol-analysis.md) — 含 PSK vs EAP 成功之后
 - [docs/macsec-protocol-analysis.md](docs/macsec-protocol-analysis.md)
