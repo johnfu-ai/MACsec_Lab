@@ -602,6 +602,44 @@ def macsec_lab_data(keys: LabKeys, encrypt: bool) -> list[tuple[str, bytes]]:
     return frames
 
 
+def macsec_replay(keys: LabKeys) -> list[tuple[str, bytes]]:
+    """Receiver replay-window story: what B's RX SA does with A's stream.
+
+    Runs a small window (2) on B's receive SA for A's SC so every verdict
+    class shows up in nine frames: in-order, gap + late reorder (accepted
+    inside the window), a stale replay below the floor (dropped), and a
+    duplicate inside the window (dropped). Replayed frames are byte-identical
+    to the originals — same PN means same GCM nonce, so ciphertext and ICV
+    are unchanged and still verify. Nothing cryptographic flags a replay;
+    only the PN window does. Verdicts live in the frame comments; the model
+    is macsec_lab.macsec.ReplayWindow (see docs/lifecycle.md §3).
+    """
+    a, b = keys.a, keys.b
+
+    def _data(pn: int, seq: int) -> bytes:
+        user = ipv4_icmp_echo("10.10.0.10", "10.10.0.20", ident=0x4242, seq=seq)
+        tag = SecTAG.build(pn=pn, an=keys.an, encrypt=True, sci=a.sci)
+        return protect_frame(b.mac, a.mac, user, keys.sak, tag, a.sci)
+
+    spec: list[tuple[int, int, str]] = [
+        (1, 1, "A→B PN=1 — in order, accepted; window advances"),
+        (2, 2, "A→B PN=2 — in order, accepted"),
+        (3, 3, "A→B PN=3 — in order, accepted (remember this frame)"),
+        (5, 5, "A→B PN=5 — PN=4 missing (lost/reordered); PN=5 accepted, "
+               "window slides: floor is now PN=3"),
+        (4, 4, "A→B PN=4 arrives late — inside the window (floor=3 < 4 < next=6), "
+               "accepted as reordered"),
+        (3, 3, "REPLAY of frame 3, byte-identical, ICV still verifies — DROPPED: "
+               "PN=3 <= floor(3), below the replay window"),
+        (6, 6, "A→B PN=6 — in order, accepted"),
+        (6, 6, "DUPLICATE of the previous frame — DROPPED: PN=6 already seen "
+               "inside the window"),
+        (7, 7, "A→B PN=7 — in order, accepted; the replay attempts never advanced "
+               "the window"),
+    ]
+    return [(label, _data(pn, seq)) for pn, seq, label in spec]
+
+
 def ieee_integrity_frame() -> bytes:
     tag = SecTAG(tci=0x22, sl=0x2A, pn=IEEE_PN, sci=IEEE_SCI)
     return protect_frame(IEEE_DA, IEEE_SA, IEEE_INT_USER, IEEE_GCM_KEY_128, tag, IEEE_SCI)

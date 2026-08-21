@@ -164,6 +164,61 @@ class XpnPnTracker:
         return (self.high << 32) | wire_pn
 
 
+class ReplayWindow:
+    """Receive-side replay protection for one SA (802.1AE Clause 10).
+
+    The receiver keeps `next` (one past the highest PN accepted in order)
+    and a `window` of tolerated reordering. A frame is:
+
+    - accepted in order  — pn >= next: advances next, window slides forward
+    - accepted reordered — inside the window (floor < pn < next) and not
+      seen yet
+    - dropped stale      — pn <= floor (next-1-window): older than the
+      window floor; replays land here once enough newer traffic passed
+    - dropped duplicate  — inside the window but already seen
+
+    window=0 is strict mode: no reordering tolerated at all, any pn < next
+    is dropped. Note the ICV of a replayed frame still verifies — replay
+    detection is a receiver policy on the PN sequence, not cryptography.
+    """
+
+    def __init__(self, window: int = 0) -> None:
+        if not 0 <= window <= 0x40000000:
+            raise ValueError("replay window must be 0..2^30")
+        self.window = window
+        self.next = 1
+        self.seen: set[int] = set()
+
+    def floor(self) -> int:
+        """Lowest PN still inside the window (0 when nothing is below yet)."""
+        return max(0, self.next - 1 - self.window)
+
+    def check(self, pn: int) -> tuple[bool, str]:
+        """Verdict for pn without recording it: (accept?, reason)."""
+        if not 1 <= pn <= 0xFFFFFFFF:
+            raise ValueError("PN is 1..2^32-1")
+        if pn >= self.next:
+            return True, "in order"
+        if pn <= self.floor():
+            return False, "stale: below window floor"
+        if pn in self.seen:
+            return False, "duplicate: already received"
+        return True, "reordered inside window"
+
+    def update(self, pn: int) -> tuple[bool, str]:
+        """Check and record: advance next / mark seen on accept."""
+        ok, why = self.check(pn)
+        if ok:
+            if pn >= self.next:
+                self.next = pn + 1
+                fl = self.floor()
+                self.seen = {p for p in self.seen if p > fl}
+            # Record in-order receipts too, or a duplicate of an in-order
+            # frame would be misread as "reordered" while still in window.
+            self.seen.add(pn)
+        return ok, why
+
+
 def protect_frame(
     da: bytes,
     sa: bytes,

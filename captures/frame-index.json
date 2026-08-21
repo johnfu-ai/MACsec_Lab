@@ -54,6 +54,17 @@
     "C→A data PN=1 AN=0 SC=1 ICMP seq=22 — node-c's own SC/SCI; explicit SCI because the CA has more than two members",
     "C MN=3 keepalive: one CAK, one KS, one SAK, three unidirectional SCs"
   ],
+  "macsec-replay.pcap": [
+    "A→B PN=1 — in order, accepted; window advances",
+    "A→B PN=2 — in order, accepted",
+    "A→B PN=3 — in order, accepted (remember this frame)",
+    "A→B PN=5 — PN=4 missing (lost/reordered); PN=5 accepted, window slides: floor is now PN=3",
+    "A→B PN=4 arrives late — inside the window (floor=3 < 4 < next=6), accepted as reordered",
+    "REPLAY of frame 3, byte-identical, ICV still verifies — DROPPED: PN=3 <= floor(3), below the replay window",
+    "A→B PN=6 — in order, accepted",
+    "DUPLICATE of the previous frame — DROPPED: PN=6 already seen inside the window",
+    "A→B PN=7 — in order, accepted; the replay attempts never advanced the window"
+  ],
   "macsec-lab-encrypted.pcap": [
     "A→B ICMP echo seq=1 (encrypted)",
     "B→A ICMP seq=1 (encrypted)",

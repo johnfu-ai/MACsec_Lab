@@ -100,6 +100,7 @@ make verify      # 测试 + tshark 能否认出 mka / macsec
 - `[captures/decoded/15-ieee-integrity-256.md](captures/decoded/15-ieee-integrity-256.md)` / `[16-ieee-encrypt-256.md](captures/decoded/16-ieee-encrypt-256.md)` — IEEE GCM-AES-256 官方向量
 - `[captures/decoded/17-mka-xpn.md](captures/decoded/17-mka-xpn.md)` — XPN：套件 ID 进 Distributed SAK，PN64 越过 2³²、线上 PN 回绕而不换钥
 - `[captures/decoded/18-mka-multi-peer.md](captures/decoded/18-mka-multi-peer.md)` — 多成员 CA：3 节点共享 CAK、一个 KS 分发一把 SAK、三个 SC 各自 PN
+- `[captures/decoded/19-macsec-replay.md](captures/decoded/19-macsec-replay.md)` — 接收端重放窗口：乱序接受、原样重放帧被丢弃（ICV 依然有效）
 
 
 
@@ -114,6 +115,7 @@ make verify      # 测试 + tshark 能否认出 mka / macsec
 | `captures/mka-co30.pcap`                  | Confidentiality offset 30：内层 EtherType+IP+8 字节明文可见，只认证不加密 |
 | `captures/mka-xpn.pcap`                   | XPN 套件：Distributed SAK 带 8 字节套件 ID、SSCI/Salt nonce、PN64 越过 2³² 不换钥（[docs/cipher-suites.md](docs/cipher-suites.md)） |
 | `captures/mka-multi-peer.pcap`            | 多成员 CA：3 节点共享一把 CAK，KS 分发**一把** SAK 给全体，三个方向各自 SC/SCI（[docs/topology.md](docs/topology.md)） |
+| `captures/macsec-replay.pcap`             | 接收端重放窗口四种裁决：按序 / 窗口内乱序接受、低于下沿 / 重复丢弃；重放帧 ICV 依然校验通过（[docs/lifecycle.md](docs/lifecycle.md) §3.1） |
 | `captures/macsec-lab-encrypted.pcap`      | 实验室 GCM-AES-128，载荷加密                       |
 | `captures/macsec-lab-integrity-only.pcap` | 同一 ICMP，`E=0 C=0`，内层 IPv4 明文可见             |
 | `captures/macsec-ieee-gcm-aes-128-*.pcap` | IEEE 公布的 GCM 测试向量（128-bit key）               |

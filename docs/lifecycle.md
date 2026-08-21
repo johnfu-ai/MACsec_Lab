@@ -55,6 +55,21 @@ sequenceDiagram
 - **重放窗口**：接收方维护每个 SA 的 PN 窗口（低于窗口下沿的帧丢弃）。换钥后新 SA 窗口重新开张。
 - **SAK Use 里的 LPN（lowest PN）**：双方在 SAK Use 中交换各自已收到的最低 PN，让对端可以安全地丢弃更老的帧。开启 **Delay Protect**（延迟保护）时，接收方直接拒收 PN 低于对端宣告 LPN 的帧，防止被缓存的旧帧延迟重放。实验室所有 SAK Use 均 `delay_protect=1`，逐字段见 13-mka-rekey.md 的 `Latest lowest PN` 行。
 
+### 3.1 窗口怎么判：四种裁决（`macsec-replay.pcap`）
+
+接收方对每个 SA 记两个量：`next`（比已按序收到的最大 PN 大 1）和窗口宽度 `W`（可容忍的乱序量，`W=0` 即严格模式：完全不许乱序）。对到达帧的 PN 逐一裁决（模型实现 `macsec_lab.macsec.ReplayWindow`，逐帧抓包 `captures/macsec-replay.pcap` / [报告 19](../captures/decoded/19-macsec-replay.md)）：
+
+| 到达 PN | 裁决 | 依据 |
+|---|---|---|
+| `PN >= next` | **接受（in order）**，`next` 前移、窗口滑动 | 最新帧 |
+| `next-1-W < PN < next` 且未见过 | **接受（reordered）** | 窗口内的合法乱序 |
+| `PN <= next-1-W` | **丢弃（stale）** | 低于窗口下沿——重放帧最终都落在这里 |
+| 窗口内但已收到过 | **丢弃（duplicate）** | 原样重发/复制的帧 |
+
+抓包里 9 帧把四种裁决全部演示了一遍：PN 1→2→3 按序；PN=5 先到（4 缺失）窗口滑过；PN=4 迟到但在窗口内被接受；随后 **PN=3 原样重放——ICV 依然校验通过**（同一 PN = 同一 GCM nonce = 同一密文同一 tag，字节级完全相同），只有 PN 窗口能拦住它；PN=6 重复帧同样被"已见过"判掉。
+
+> 关键认知：**重放检测不是密码学**。重放帧是合法帧的逐字节拷贝，GCM/ICV 层面毫无破绽；防线完全在接收端的 PN 序列策略上。这也是为什么 `W` 不能开太大——窗口越大，重放帧能存活的时间越长。
+
 ## 4. 保活与判死
 
 - MKA 参与者默认 **每 2 s** 发一帧 MKPDU（无大事发生时就是 keepalive，内容仍是 Basic + Live Peer + SAK Use）。

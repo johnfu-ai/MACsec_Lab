@@ -38,7 +38,7 @@ from macsec_lab.keys import (
     LabKeys,
 )
 from macsec_lab.l3 import ipv4_icmp_echo
-from macsec_lab.macsec import SecTAG, XpnPnTracker, parse_frame, protect_frame
+from macsec_lab.macsec import ReplayWindow, SecTAG, XpnPnTracker, parse_frame, protect_frame
 from macsec_lab.dissect import dissect_eap, dissect_macsec, dissect_mka
 from macsec_lab.mka import parse_eapol_mka
 from macsec_lab.scenario import (
@@ -54,6 +54,7 @@ from macsec_lab.scenario import (
     mka_multi_peer,
     mka_rekey,
     mka_xpn,
+    macsec_replay,
     multi_peer_c,
 )
 
@@ -384,6 +385,62 @@ class MultiPeerCa(unittest.TestCase):
         # different SAs is not a replay.
         self.assertEqual(scis, {keys.a.sci, keys.b.sci, c.sci})
         self.assertEqual(pns, [1, 1, 1])
+
+
+class ReplayWindowStory(unittest.TestCase):
+    """Receiver-side replay protection (802.1AE Clause 10): the wire shows
+    byte-identical replays whose ICVs still verify; only the PN window on
+    B's RX SA drops them."""
+
+    def test_window_verdicts(self) -> None:
+        w = ReplayWindow(window=2)
+        self.assertEqual(w.update(1), (True, "in order"))
+        self.assertEqual(w.update(2), (True, "in order"))
+        self.assertEqual(w.update(3), (True, "in order"))
+        self.assertEqual(w.floor(), 1)
+        self.assertEqual(w.update(5), (True, "in order"))
+        self.assertEqual(w.floor(), 3)  # slid past the gap
+        self.assertEqual(w.update(4), (True, "reordered inside window"))
+        self.assertEqual(w.update(3), (False, "stale: below window floor"))
+        self.assertEqual(w.update(6), (True, "in order"))
+        self.assertEqual(w.update(6), (False, "duplicate: already received"))
+        self.assertEqual(w.update(7), (True, "in order"))
+        self.assertEqual(w.next, 8)
+
+    def test_strict_mode_drops_all_reordering(self) -> None:
+        w = ReplayWindow()  # window=0 = strict
+        self.assertEqual(w.update(1), (True, "in order"))
+        self.assertEqual(w.update(3), (True, "in order"))
+        self.assertEqual(w.floor(), 3)
+        # The late PN=2 is inside nothing: strict mode drops it.
+        self.assertEqual(w.update(2), (False, "stale: below window floor"))
+        with self.assertRaises(ValueError):
+            ReplayWindow().update(0)
+        with self.assertRaises(ValueError):
+            ReplayWindow().update(2**32)
+        with self.assertRaises(ValueError):
+            ReplayWindow(window=2**31)
+
+    def test_story_wire_matches_window_verdicts(self) -> None:
+        keys = LabKeys.default()
+        frames = macsec_replay(keys)
+        self.assertEqual(len(frames), 9)
+        w = ReplayWindow(window=2)
+        for (comment, raw), (want_ok, _) in zip(
+            frames,
+            [(True, "")] * 5 + [(False, ""), (True, ""), (False, ""), (True, "")],
+        ):
+            p = parse_frame(raw, keys.sak)
+            self.assertTrue(p["icv_ok"], comment)  # replays still verify
+            pn = p["tag"].pn
+            ok, why = w.update(pn)
+            self.assertEqual(ok, want_ok, f"{comment} -> {why}")
+        # The replay is byte-identical to the original frame.
+        self.assertEqual(frames[5][1], frames[2][1])
+        self.assertEqual(frames[7][1], frames[6][1])
+        # Identical bytes because identical PN -> identical GCM nonce.
+        self.assertEqual([int.from_bytes(r[16:20], "big") for _, r in frames],
+                         [1, 2, 3, 5, 4, 3, 6, 6, 7])
 
 
 class MermaidLabels(unittest.TestCase):
