@@ -640,6 +640,83 @@ def macsec_replay(keys: LabKeys) -> list[tuple[str, bytes]]:
     return [(label, _data(pn, seq)) for pn, seq, label in spec]
 
 
+def mka_delay_protect(keys: LabKeys) -> list[tuple[str, bytes]]:
+    """Delay Protect story (802.1X SAK Use LPN + 802.1AE receive floor).
+
+    Delay protect bounds how long an attacker can withhold a frame and
+    replay it later. The receiver advertises in every SAK Use the lowest PN
+    it will still accept (Latest lowest PN, LLPN; Old lowest PN for the
+    previous key during rollover). Once advertised, its SecY rejects frames
+    with PN below that floor — so a replayed frame older than one MKA hello
+    interval (~2 s) is dropped even though it sits *inside* a classic replay
+    window and its ICV verifies. That is the difference from the plain
+    window in macsec-replay.pcap: a withheld frame the receiver never saw
+    would be ACCEPTED by window logic alone (unseen, in window), but never
+    by delay protect.
+
+    pcap layout: the 6 handshake frames, then A sends PN=1..3; PN=1 is
+    intercepted (B never receives it); B's keepalive publishes LLPN=3; the
+    attacker releases the withheld PN=1 and it is dropped below the floor.
+    Model: macsec_lab.macsec.ReplayWindow.set_delay_floor().
+    """
+    a, b = keys.a, keys.b
+    frames = list(mka_handshake(keys))
+
+    def _data(pn: int, seq: int) -> bytes:
+        user = ipv4_icmp_echo("10.10.0.10", "10.10.0.20", ident=0x4242, seq=seq)
+        tag = SecTAG.build(pn=pn, an=keys.an, encrypt=True, sci=a.sci)
+        return protect_frame(b.mac, a.mac, user, keys.sak, tag, a.sci)
+
+    withheld = _data(1, 30)
+    frames.append((
+        "A→B PN=1 — an on-path attacker INTERCEPTS this frame; B never "
+        "receives it (from here on it exists only in the attacker's buffer)",
+        withheld,
+    ))
+    frames.append(("A→B PN=2 — received by B", _data(2, 31)))
+    frames.append(("A→B PN=3 — received by B", _data(3, 32)))
+    frames.append((
+        "B MN=4 keepalive: SAK Use delay_protect=1, Latest lowest PN (LLPN) = 3 — "
+        "B publishes its receive floor: PNs below 3 will be rejected from now on",
+        build_mkpdu_frame(
+            sa=b.mac,
+            ick=keys.ick,
+            basic=_basic(b, keys, 4, False),
+            param_sets=[
+                SakUse(
+                    latest_an=keys.an, latest_tx=True, latest_rx=True, delay_protect=True,
+                    latest_server_mi=a.mi, latest_kn=keys.kn, latest_lpn=3,
+                ),
+                PeerList(1, [PeerTuple(a.mi, 3)]),
+            ],
+        ),
+    ))
+    frames.append((
+        "ATTACKER releases the withheld PN=1 (byte-identical to frame 7, ICV "
+        "valid, INSIDE a classic 32-deep window and never seen) — DROPPED: "
+        "PN=1 < B's advertised LLPN=3. Delay protect bounds replay delay to "
+        "the MKA hello interval (~2 s); the plain window would have accepted it",
+        withheld,
+    ))
+    frames.append((
+        "A MN=4 keepalive: SAK Use delay_protect=1 (A received no data from B, "
+        "so A's own LLPN stays 1) — the floor each side enforces is its own",
+        build_mkpdu_frame(
+            sa=a.mac,
+            ick=keys.ick,
+            basic=_basic(a, keys, 4, True),
+            param_sets=[
+                SakUse(
+                    latest_an=keys.an, latest_tx=True, latest_rx=True, delay_protect=True,
+                    latest_server_mi=a.mi, latest_kn=keys.kn, latest_lpn=1,
+                ),
+                PeerList(1, [PeerTuple(b.mi, 4)]),
+            ],
+        ),
+    ))
+    return frames
+
+
 def ieee_integrity_frame() -> bytes:
     tag = SecTAG(tci=0x22, sl=0x2A, pn=IEEE_PN, sci=IEEE_SCI)
     return protect_frame(IEEE_DA, IEEE_SA, IEEE_INT_USER, IEEE_GCM_KEY_128, tag, IEEE_SCI)

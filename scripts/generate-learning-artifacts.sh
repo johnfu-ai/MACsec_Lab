@@ -33,6 +33,8 @@ if command -v tshark >/dev/null 2>&1; then
         > "${DECODE}/18-tshark-mka-multi-peer-verbose.txt" 2>/dev/null || true
     tshark -r captures/macsec-replay.pcap -Y "macsec" -V \
         > "${DECODE}/19-tshark-macsec-replay-verbose.txt" 2>/dev/null || true
+    tshark -r captures/mka-delay-protect.pcap -Y "mka or macsec" -V \
+        > "${DECODE}/20-tshark-mka-delay-protect-verbose.txt" 2>/dev/null || true
     tshark -r captures/macsec-ieee-gcm-aes-256-encrypt.pcap -Y "macsec" -V \
         > "${DECODE}/16-tshark-ieee256-encrypt-verbose.txt" 2>/dev/null || true
     tshark -r captures/session-full.pcap -q -z io,phs \
@@ -57,7 +59,8 @@ MACsec Lab — decoded learning artifacts
 17-mka-xpn.md                       XPN：套件 ID 进 Distributed SAK，PN64 越过 2^32 回绕
 18-mka-multi-peer.md                多成员 CA：3 节点共享 CAK，一个 KS 一把 SAK，三个 SC
 19-macsec-replay.md                 接收端重放窗口：乱序接受、重放/重复帧丢弃（模型 ReplayWindow）
-07–10, 12–14, 16–19 tshark          Wireshark 树（若已安装 tshark）
+20-mka-delay-protect.md             Delay Protect：SAK Use 宣告 LLPN 下沿，被截留的帧超时即弃
+07–10, 12–14, 16–20 tshark          Wireshark 树（若已安装 tshark）
 
 中文总览（含序列图）：docs/protocol-analysis.md
 EAP vs PSK：docs/mka-protocol-analysis.md

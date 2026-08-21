@@ -53,7 +53,7 @@ sequenceDiagram
 ## 3. 抗重放与 Delay Protect
 
 - **重放窗口**：接收方维护每个 SA 的 PN 窗口（低于窗口下沿的帧丢弃）。换钥后新 SA 窗口重新开张。
-- **SAK Use 里的 LPN（lowest PN）**：双方在 SAK Use 中交换各自已收到的最低 PN，让对端可以安全地丢弃更老的帧。开启 **Delay Protect**（延迟保护）时，接收方直接拒收 PN 低于对端宣告 LPN 的帧，防止被缓存的旧帧延迟重放。实验室所有 SAK Use 均 `delay_protect=1`，逐字段见 13-mka-rekey.md 的 `Latest lowest PN` 行。
+- **SAK Use 里的 LPN（lowest PN）**：双方在 SAK Use 中交换各自仍可接受的最低 PN（Latest/Old lowest PN），配合 **Delay Protect** 使用，详见下面 §3.2。实验室所有 SAK Use 均 `delay_protect=1`，逐字段见 13-mka-rekey.md 的 `Latest lowest PN` 行。
 
 ### 3.1 窗口怎么判：四种裁决（`macsec-replay.pcap`）
 
@@ -69,6 +69,27 @@ sequenceDiagram
 抓包里 9 帧把四种裁决全部演示了一遍：PN 1→2→3 按序；PN=5 先到（4 缺失）窗口滑过；PN=4 迟到但在窗口内被接受；随后 **PN=3 原样重放——ICV 依然校验通过**（同一 PN = 同一 GCM nonce = 同一密文同一 tag，字节级完全相同），只有 PN 窗口能拦住它；PN=6 重复帧同样被"已见过"判掉。
 
 > 关键认知：**重放检测不是密码学**。重放帧是合法帧的逐字节拷贝，GCM/ICV 层面毫无破绽；防线完全在接收端的 PN 序列策略上。这也是为什么 `W` 不能开太大——窗口越大，重放帧能存活的时间越长。
+
+### 3.2 Delay Protect：把重放延迟限死在 MKA 周期内（`mka-delay-protect.pcap`）
+
+§3.1 的窗口有个盲区：**被截留的帧**。假设攻击者拦下 PN=1 不放行，B 只收到 PN=2、3——对 B 来说 PN=1 "没见过、又在窗口里"，攻击者任何时候放出这帧，经典窗口都会**接受**它。窗口宽度只约束"已见过的最老帧"，不约束"多久之前的帧还能第一次到达"。
+
+Delay Protect 补上这个洞（MKA 层机制，不是新的密码学）：
+
+1. 每隔一个 MKA 周期（默认 **2 s**），接收方在 SAK Use 里宣告自己**仍可接受的最低 PN**（Latest lowest PN，LLPN；换钥过渡期还有 Old lowest PN，OLPN，用于旧钥排空）。
+2. 宣告之后，接收方 SecY 拒收 **PN < LLPN** 的帧——无论经典窗口怎么说。
+3. 效果：一帧被延迟超过约一个 MKA 周期就必然作废。攻击者的"存货"每 2 秒清零一次。
+
+抓包故事（`captures/mka-delay-protect.pcap`，逐帧 [报告 20](../captures/decoded/20-mka-delay-protect.md)）：前 6 帧是标准握手；A 发 PN=1/2/3，其中 **PN=1 被在路径攻击者截留**（B 没收到）；B 的 keepalive 在 SAK Use 里宣告 `delay_protect=1, LLPN=3`；攻击者随后释放 PN=1——字节级合法、ICV 通过、在 32 深窗口内且从未见过，**经典窗口必收**，但 `1 < 3` 落在 LPN 下沿之下，**丢弃**。
+
+| | 经典重放窗口（§3.1） | + Delay Protect（本节） |
+|---|---|---|
+| 拦下的帧延迟重放 | **接受**（未见过、在窗口内） | **丢弃**（< LLPN） |
+| 重放延迟上界 | 无（窗口只随流量滑动） | ≈ 一个 MKA 周期（2 s） |
+| 代价 | — | 真正的乱序/慢路径帧超过 2 s 也被丢；需低时延网络 |
+| 换钥时 | 旧钥帧靠 drain 排空 | OLPN 让 KS 精确知道旧钥何时可退役 |
+
+模型实现：`macsec_lab.macsec.ReplayWindow.set_delay_floor()`（LPN 下沿优先于窗口判定）。
 
 ## 4. 保活与判死
 

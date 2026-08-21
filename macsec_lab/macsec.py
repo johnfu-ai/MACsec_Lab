@@ -188,6 +188,16 @@ class ReplayWindow:
         self.window = window
         self.next = 1
         self.seen: set[int] = set()
+        # Delay protect (MKA SAK Use LPN): 0 = off. When set, this is the
+        # receiver's own advertised "lowest acceptable PN" — frames below it
+        # are rejected no matter where the classic window floor sits.
+        self.delay_floor = 0
+
+    def set_delay_floor(self, lpn: int) -> None:
+        """Turn delay protect on at `lpn` (the lowest PN still acceptable)."""
+        if not 1 <= lpn <= 0xFFFFFFFF:
+            raise ValueError("LPN is 1..2^32-1")
+        self.delay_floor = lpn
 
     def floor(self) -> int:
         """Lowest PN still inside the window (0 when nothing is below yet)."""
@@ -199,6 +209,8 @@ class ReplayWindow:
             raise ValueError("PN is 1..2^32-1")
         if pn >= self.next:
             return True, "in order"
+        if self.delay_floor and pn < self.delay_floor:
+            return False, "delayed: below delay-protect LPN floor"
         if pn <= self.floor():
             return False, "stale: below window floor"
         if pn in self.seen:

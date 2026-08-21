@@ -335,6 +335,7 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         ("mka-xpn.pcap", "xpn", "17-mka-xpn.md"),
         ("mka-multi-peer.pcap", "multi", "18-mka-multi-peer.md"),
         ("macsec-replay.pcap", "replay", "19-macsec-replay.md"),
+        ("mka-delay-protect.pcap", "delay", "20-mka-delay-protect.md"),
         ("macsec-ieee-gcm-aes-256-integrity.pcap", "ieee256", "15-ieee-integrity-256.md"),
         ("macsec-ieee-gcm-aes-256-encrypt.pcap", "ieee256", "16-ieee-encrypt-256.md"),
     ]

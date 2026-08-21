@@ -65,6 +65,20 @@
     "DUPLICATE of the previous frame — DROPPED: PN=6 already seen inside the window",
     "A→B PN=7 — in order, accepted; the replay attempts never advanced the window"
   ],
+  "mka-delay-protect.pcap": [
+    "A MN=1 hello (claim Key Server, no peers yet)",
+    "B MN=1 hello (saw A; Potential Peer List; not Key Server)",
+    "A MN=2 Key Server: Live Peer List + Distributed SAK + SAK Use (tx)",
+    "B MN=2: Live Peer List + SAK Use (tx+rx) after installing SAK",
+    "A MN=3: both sides using SAK (tx+rx), session up",
+    "B MN=3 keepalive",
+    "A→B PN=1 — an on-path attacker INTERCEPTS this frame; B never receives it (from here on it exists only in the attacker's buffer)",
+    "A→B PN=2 — received by B",
+    "A→B PN=3 — received by B",
+    "B MN=4 keepalive: SAK Use delay_protect=1, Latest lowest PN (LLPN) = 3 — B publishes its receive floor: PNs below 3 will be rejected from now on",
+    "ATTACKER releases the withheld PN=1 (byte-identical to frame 7, ICV valid, INSIDE a classic 32-deep window and never seen) — DROPPED: PN=1 < B's advertised LLPN=3. Delay protect bounds replay delay to the MKA hello interval (~2 s); the plain window would have accepted it",
+    "A MN=4 keepalive: SAK Use delay_protect=1 (A received no data from B, so A's own LLPN stays 1) — the floor each side enforces is its own"
+  ],
   "macsec-lab-encrypted.pcap": [
     "A→B ICMP echo seq=1 (encrypted)",
     "B→A ICMP seq=1 (encrypted)",

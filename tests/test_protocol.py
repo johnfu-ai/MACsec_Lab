@@ -55,6 +55,7 @@ from macsec_lab.scenario import (
     mka_rekey,
     mka_xpn,
     macsec_replay,
+    mka_delay_protect,
     multi_peer_c,
 )
 
@@ -441,6 +442,51 @@ class ReplayWindowStory(unittest.TestCase):
         # Identical bytes because identical PN -> identical GCM nonce.
         self.assertEqual([int.from_bytes(r[16:20], "big") for _, r in frames],
                          [1, 2, 3, 5, 4, 3, 6, 6, 7])
+
+
+class DelayProtectStory(unittest.TestCase):
+    """Delay protect (SAK Use LPN) bounds replay delay to the MKA interval:
+    a withheld frame inside the classic window is accepted without it and
+    dropped with it."""
+
+    def test_withheld_frame_classic_window_accepts_delay_protect_drops(self) -> None:
+        # Classic window=32: B received 2 and 3 but never 1 (intercepted).
+        w = ReplayWindow(window=32)
+        w.update(2)
+        w.update(3)
+        # The withheld PN=1 is unseen and inside the window -> accepted.
+        self.assertEqual(w.check(1), (True, "reordered inside window"))
+        # With delay protect on and B's advertised LLPN=3 as the floor...
+        w.set_delay_floor(3)
+        self.assertEqual(w.check(1), (False, "delayed: below delay-protect LPN floor"))
+        self.assertEqual(w.check(3), (False, "duplicate: already received"))
+        with self.assertRaises(ValueError):
+            ReplayWindow().set_delay_floor(0)
+
+    def test_story_publishes_lpn_then_drops_the_withheld_frame(self) -> None:
+        keys = LabKeys.default()
+        frames = mka_delay_protect(keys)
+        self.assertEqual(len(frames), 12)
+        # Frame 11 (index 10) is the withheld PN=1 replayed, byte-identical
+        # to frame 7 (index 6).
+        self.assertEqual(frames[10][1], frames[6][1])
+        # B's keepalive (index 9) publishes delay_protect=1 and LLPN=3.
+        p = parse_eapol_mka(frames[9][1], keys.ick, keys.kek)
+        su = next(s["body"] for s in p["param_sets"] if s["code"] == 3)
+        self.assertTrue(su.delay_protect)
+        self.assertEqual(su.latest_lpn, 3)
+        self.assertTrue(p["icv_ok"])
+        # The withheld frame itself is a perfectly valid MACsec frame.
+        q = parse_frame(frames[10][1], keys.sak)
+        self.assertTrue(q["icv_ok"])
+        self.assertEqual(q["tag"].pn, 1)
+        # ReplayWindow replay of the whole story from B's viewpoint.
+        w = ReplayWindow(window=32)
+        w.update(2)
+        w.update(3)
+        w.set_delay_floor(3)
+        ok, why = w.update(1)
+        self.assertFalse(ok)
 
 
 class MermaidLabels(unittest.TestCase):

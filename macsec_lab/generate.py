@@ -20,6 +20,7 @@ from .scenario import (
     mka_multi_peer,
     mka_rekey,
     mka_xpn,
+    mka_delay_protect,
 )
 
 
@@ -45,6 +46,7 @@ def generate(out_dir: Path) -> dict[str, Path]:
     xpn = mka_xpn(keys)
     multi = mka_multi_peer(keys)
     replay = macsec_replay(keys)
+    delay = mka_delay_protect(keys)
     enc = macsec_lab_data(keys, encrypt=True)
     integ = macsec_lab_data(keys, encrypt=False)
     ieee_i = [("IEEE GCM-AES-128 integrity-only test vector", ieee_integrity_frame())]
@@ -61,6 +63,7 @@ def generate(out_dir: Path) -> dict[str, Path]:
         "mka-xpn.pcap": xpn,
         "mka-multi-peer.pcap": multi,
         "macsec-replay.pcap": replay,
+        "mka-delay-protect.pcap": delay,
         "macsec-lab-encrypted.pcap": enc,
         "macsec-lab-integrity-only.pcap": integ,
         "macsec-ieee-gcm-aes-128-integrity.pcap": ieee_i,
