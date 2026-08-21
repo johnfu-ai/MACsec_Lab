@@ -164,7 +164,7 @@ Key Server 随机生成 SAK  →  AES-KW(KEK, SAK) 经 MKA 分发  →  SecY GCM
 - [docs/glossary.md](docs/glossary.md)
 - [docs/deployments.md](docs/deployments.md) — 真实世界：Linux wpa_supplicant/ip macsec、厂商、NIC 卸载、运维清单
 - [docs/vs-ipsec.md](docs/vs-ipsec.md)（对照 IPsec_Lab）
-- [docs/attacks.md](docs/attacks.md)
+- [docs/attacks.md](docs/attacks.md) — 攻击面分析：nonce 复用/重放/延迟重放/降级/离线暴力/组密钥局限，每条带实验室证据
 - [docs/standards-map.md](docs/standards-map.md)
 
 
