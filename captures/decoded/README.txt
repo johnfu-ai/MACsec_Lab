@@ -11,7 +11,8 @@ MACsec Lab — decoded learning artifacts
 14-mka-co30.md                      Confidentiality Offset 30：内层 IP 头明文可见
 15/16-ieee-*256.md                  IEEE GCM-AES-256 官方向量（同帧、256-bit key）
 17-mka-xpn.md                       XPN：套件 ID 进 Distributed SAK，PN64 越过 2^32 回绕
-07–10, 12–14, 16, 17 tshark         Wireshark 树（若已安装 tshark）
+18-mka-multi-peer.md                多成员 CA：3 节点共享 CAK，一个 KS 一把 SAK，三个 SC
+07–10, 12–14, 16–18 tshark          Wireshark 树（若已安装 tshark）
 
 中文总览（含序列图）：docs/protocol-analysis.md
 EAP vs PSK：docs/mka-protocol-analysis.md

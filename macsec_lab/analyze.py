@@ -333,6 +333,7 @@ def write_reports(capture_dir: Path, out_dir: Path, docs_dir: Path | None = None
         ("mka-rekey.pcap", "rekey", "13-mka-rekey.md"),
         ("mka-co30.pcap", "co30", "14-mka-co30.md"),
         ("mka-xpn.pcap", "xpn", "17-mka-xpn.md"),
+        ("mka-multi-peer.pcap", "multi", "18-mka-multi-peer.md"),
         ("macsec-ieee-gcm-aes-256-integrity.pcap", "ieee256", "15-ieee-integrity-256.md"),
         ("macsec-ieee-gcm-aes-256-encrypt.pcap", "ieee256", "16-ieee-encrypt-256.md"),
     ]

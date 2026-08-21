@@ -1,0 +1,641 @@
+Frame 1: Packet, 82 bytes on wire (656 bits), 82 bytes captured (656 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:20.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:20.000000000 UTC
+    Epoch Arrival Time: 1700000000.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time since reference or first frame: 0.000000000 seconds]
+    Frame Number: 1
+    Frame Length: 82 bytes (656 bits)
+    Capture Length: 82 bytes (656 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:eapol]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0a (02:00:00:00:00:0a), Dst: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+    Destination: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+        .... ..0. .... .... .... .... = LG bit: Globally unique address (factory default)
+        .... ...1 .... .... .... .... = IG bit: Group address (multicast/broadcast)
+    Source: 02:00:00:00:00:0a (02:00:00:00:00:0a)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1X Authentication (0x888e)
+    [Stream index: 0]
+802.1X Authentication
+    Version: 802.1X-2010 (3)
+    Type: MKA (5)
+    Length: 64
+MACsec Key Agreement
+    Basic Parameter set
+        MKA Version Identifier: 2
+        Key Server Priority: 16
+        1... .... = Key Server: True
+        .1.. .... = MACsec Desired: True
+        ..11 .... = MACsec Capability: MACsec Integrity with/without confidentiality, confidentiality offset 0, 30, or 50 (3)
+        .... 0000 0010 1100 = Parameter set body length: 44
+        SCI: 02000000000a0001
+        Actor Member Identifier: aa01aa02aa03aa04aa05aa06
+        Actor Message Number: 00000001
+        Algorithm Agility: IEEE Std 802.1X-2010 (0x0080c201)
+        CAK Name: 4d41435345432d4c41422d434b4e3031
+    Integrity Check Value: 71216e851900b42b0f9d5797f8938f98
+
+Frame 2: Packet, 102 bytes on wire (816 bits), 102 bytes captured (816 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:21.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:21.000000000 UTC
+    Epoch Arrival Time: 1700000001.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 1 second]
+    Frame Number: 2
+    Frame Length: 102 bytes (816 bits)
+    Capture Length: 102 bytes (816 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:eapol]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0b (02:00:00:00:00:0b), Dst: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+    Destination: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+        .... ..0. .... .... .... .... = LG bit: Globally unique address (factory default)
+        .... ...1 .... .... .... .... = IG bit: Group address (multicast/broadcast)
+    Source: 02:00:00:00:00:0b (02:00:00:00:00:0b)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1X Authentication (0x888e)
+    [Stream index: 1]
+802.1X Authentication
+    Version: 802.1X-2010 (3)
+    Type: MKA (5)
+    Length: 84
+MACsec Key Agreement
+    Basic Parameter set
+        MKA Version Identifier: 2
+        Key Server Priority: 32
+        0... .... = Key Server: False
+        .1.. .... = MACsec Desired: True
+        ..11 .... = MACsec Capability: MACsec Integrity with/without confidentiality, confidentiality offset 0, 30, or 50 (3)
+        .... 0000 0010 1100 = Parameter set body length: 44
+        SCI: 02000000000b0001
+        Actor Member Identifier: bb01bb02bb03bb04bb05bb06
+        Actor Message Number: 00000001
+        Algorithm Agility: IEEE Std 802.1X-2010 (0x0080c201)
+        CAK Name: 4d41435345432d4c41422d434b4e3031
+    Potential Peer List Parameter set
+        Parameter set type: Potential Peer List (2)
+        .... 0000 0001 0000 = Parameter set body length: 16
+        Peer Member Identifier: aa01aa02aa03aa04aa05aa06
+        Peer Message Number: 00000001
+    Integrity Check Value: 05264f33c846a84cfe7ed916a10c537e
+
+Frame 3: Packet, 118 bytes on wire (944 bits), 118 bytes captured (944 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:22.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:22.000000000 UTC
+    Epoch Arrival Time: 1700000002.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 2 seconds]
+    Frame Number: 3
+    Frame Length: 118 bytes (944 bits)
+    Capture Length: 118 bytes (944 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:eapol]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0c (02:00:00:00:00:0c), Dst: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+    Destination: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+        .... ..0. .... .... .... .... = LG bit: Globally unique address (factory default)
+        .... ...1 .... .... .... .... = IG bit: Group address (multicast/broadcast)
+    Source: 02:00:00:00:00:0c (02:00:00:00:00:0c)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1X Authentication (0x888e)
+    [Stream index: 2]
+802.1X Authentication
+    Version: 802.1X-2010 (3)
+    Type: MKA (5)
+    Length: 100
+MACsec Key Agreement
+    Basic Parameter set
+        MKA Version Identifier: 2
+        Key Server Priority: 48
+        0... .... = Key Server: False
+        .1.. .... = MACsec Desired: True
+        ..11 .... = MACsec Capability: MACsec Integrity with/without confidentiality, confidentiality offset 0, 30, or 50 (3)
+        .... 0000 0010 1100 = Parameter set body length: 44
+        SCI: 02000000000c0001
+        Actor Member Identifier: cc11cc12cc13cc14cc15cc16
+        Actor Message Number: 00000001
+        Algorithm Agility: IEEE Std 802.1X-2010 (0x0080c201)
+        CAK Name: 4d41435345432d4c41422d434b4e3031
+    Potential Peer List Parameter set
+        Parameter set type: Potential Peer List (2)
+        .... 0000 0010 0000 = Parameter set body length: 32
+        Peer Member Identifier: aa01aa02aa03aa04aa05aa06
+        Peer Message Number: 00000001
+        Peer Member Identifier: bb01bb02bb03bb04bb05bb06
+        Peer Message Number: 00000001
+    Integrity Check Value: c188605c3e38ee940dc4a009ef4fa5d0
+
+Frame 4: Packet, 194 bytes on wire (1552 bits), 194 bytes captured (1552 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:23.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:23.000000000 UTC
+    Epoch Arrival Time: 1700000003.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 3 seconds]
+    Frame Number: 4
+    Frame Length: 194 bytes (1552 bits)
+    Capture Length: 194 bytes (1552 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:eapol]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0a (02:00:00:00:00:0a), Dst: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+    Destination: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+        .... ..0. .... .... .... .... = LG bit: Globally unique address (factory default)
+        .... ...1 .... .... .... .... = IG bit: Group address (multicast/broadcast)
+    Source: 02:00:00:00:00:0a (02:00:00:00:00:0a)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1X Authentication (0x888e)
+    [Stream index: 0]
+802.1X Authentication
+    Version: 802.1X-2010 (3)
+    Type: MKA (5)
+    Length: 176
+MACsec Key Agreement
+    Basic Parameter set
+        MKA Version Identifier: 2
+        Key Server Priority: 16
+        1... .... = Key Server: True
+        .1.. .... = MACsec Desired: True
+        ..11 .... = MACsec Capability: MACsec Integrity with/without confidentiality, confidentiality offset 0, 30, or 50 (3)
+        .... 0000 0010 1100 = Parameter set body length: 44
+        SCI: 02000000000a0001
+        Actor Member Identifier: aa01aa02aa03aa04aa05aa06
+        Actor Message Number: 00000002
+        Algorithm Agility: IEEE Std 802.1X-2010 (0x0080c201)
+        CAK Name: 4d41435345432d4c41422d434b4e3031
+    Distributed SAK parameter set
+        Parameter set type: Distributed SAK (4)
+        00.. .... = Distributed AN: 0
+        ..00 .... = Confidentiality Offset: No confidentiality (0)
+        .... 0000 0001 1100 = Parameter set body length: 28
+        Key Number: 00000001
+        AES Key Wrap of SAK: 37f340ac59e7db5f164e8c830b35f671d8c583c19577ccd2
+    MACsec SAK Use parameter set
+        Parameter set type: MACsec SAK Use (3)
+        00.. .... = Latest Key AN: 0
+        ..1. .... = Latest Key tx: True
+        ...0 .... = Latest Key rx: False
+        .... 00.. = Old Key AN: 0
+        .... ..0. = Old Key tx: False
+        .... ...0 = Old Key rx: False
+        0... .... = Plain tx: False
+        .0.. .... = Plain rx: False
+        ...1 .... = Delay protect: True
+        .... 0000 0010 1000 = Parameter set body length: 40
+        Latest Key: Key Server Member Identifier: aa01aa02aa03aa04aa05aa06
+        Latest Key: Key Number: 00000001
+        Latest Key: Lowest Acceptable PN (32 MSB): 00000001
+        Old Key: Key Server Member Identifier: 000000000000000000000000
+        Old Key: Key Number: 00000000
+        Old Key: Lowest Acceptable PN (32 MSB): 00000001
+    Live Peer List Parameter set
+        Parameter set type: Live Peer List (1)
+        .... 0000 0010 0000 = Parameter set body length: 32
+        Peer Member Identifier: bb01bb02bb03bb04bb05bb06
+        Peer Message Number: 00000001
+        Peer Member Identifier: cc11cc12cc13cc14cc15cc16
+        Peer Message Number: 00000001
+    Integrity Check Value: 557a74e4f51f03b0cd3b8a213b80b387
+
+Frame 5: Packet, 162 bytes on wire (1296 bits), 162 bytes captured (1296 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:24.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:24.000000000 UTC
+    Epoch Arrival Time: 1700000004.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 4 seconds]
+    Frame Number: 5
+    Frame Length: 162 bytes (1296 bits)
+    Capture Length: 162 bytes (1296 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:eapol]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0b (02:00:00:00:00:0b), Dst: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+    Destination: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+        .... ..0. .... .... .... .... = LG bit: Globally unique address (factory default)
+        .... ...1 .... .... .... .... = IG bit: Group address (multicast/broadcast)
+    Source: 02:00:00:00:00:0b (02:00:00:00:00:0b)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1X Authentication (0x888e)
+    [Stream index: 1]
+802.1X Authentication
+    Version: 802.1X-2010 (3)
+    Type: MKA (5)
+    Length: 144
+MACsec Key Agreement
+    Basic Parameter set
+        MKA Version Identifier: 2
+        Key Server Priority: 32
+        0... .... = Key Server: False
+        .1.. .... = MACsec Desired: True
+        ..11 .... = MACsec Capability: MACsec Integrity with/without confidentiality, confidentiality offset 0, 30, or 50 (3)
+        .... 0000 0010 1100 = Parameter set body length: 44
+        SCI: 02000000000b0001
+        Actor Member Identifier: bb01bb02bb03bb04bb05bb06
+        Actor Message Number: 00000002
+        Algorithm Agility: IEEE Std 802.1X-2010 (0x0080c201)
+        CAK Name: 4d41435345432d4c41422d434b4e3031
+    MACsec SAK Use parameter set
+        Parameter set type: MACsec SAK Use (3)
+        00.. .... = Latest Key AN: 0
+        ..1. .... = Latest Key tx: True
+        ...1 .... = Latest Key rx: True
+        .... 00.. = Old Key AN: 0
+        .... ..0. = Old Key tx: False
+        .... ...0 = Old Key rx: False
+        0... .... = Plain tx: False
+        .0.. .... = Plain rx: False
+        ...1 .... = Delay protect: True
+        .... 0000 0010 1000 = Parameter set body length: 40
+        Latest Key: Key Server Member Identifier: aa01aa02aa03aa04aa05aa06
+        Latest Key: Key Number: 00000001
+        Latest Key: Lowest Acceptable PN (32 MSB): 00000001
+        Old Key: Key Server Member Identifier: 000000000000000000000000
+        Old Key: Key Number: 00000000
+        Old Key: Lowest Acceptable PN (32 MSB): 00000001
+    Live Peer List Parameter set
+        Parameter set type: Live Peer List (1)
+        .... 0000 0010 0000 = Parameter set body length: 32
+        Peer Member Identifier: aa01aa02aa03aa04aa05aa06
+        Peer Message Number: 00000002
+        Peer Member Identifier: cc11cc12cc13cc14cc15cc16
+        Peer Message Number: 00000001
+    Integrity Check Value: 3c820273db7d85277165580b48d417de
+
+Frame 6: Packet, 162 bytes on wire (1296 bits), 162 bytes captured (1296 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:25.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:25.000000000 UTC
+    Epoch Arrival Time: 1700000005.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 5 seconds]
+    Frame Number: 6
+    Frame Length: 162 bytes (1296 bits)
+    Capture Length: 162 bytes (1296 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:eapol]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0c (02:00:00:00:00:0c), Dst: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+    Destination: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+        .... ..0. .... .... .... .... = LG bit: Globally unique address (factory default)
+        .... ...1 .... .... .... .... = IG bit: Group address (multicast/broadcast)
+    Source: 02:00:00:00:00:0c (02:00:00:00:00:0c)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1X Authentication (0x888e)
+    [Stream index: 2]
+802.1X Authentication
+    Version: 802.1X-2010 (3)
+    Type: MKA (5)
+    Length: 144
+MACsec Key Agreement
+    Basic Parameter set
+        MKA Version Identifier: 2
+        Key Server Priority: 48
+        0... .... = Key Server: False
+        .1.. .... = MACsec Desired: True
+        ..11 .... = MACsec Capability: MACsec Integrity with/without confidentiality, confidentiality offset 0, 30, or 50 (3)
+        .... 0000 0010 1100 = Parameter set body length: 44
+        SCI: 02000000000c0001
+        Actor Member Identifier: cc11cc12cc13cc14cc15cc16
+        Actor Message Number: 00000002
+        Algorithm Agility: IEEE Std 802.1X-2010 (0x0080c201)
+        CAK Name: 4d41435345432d4c41422d434b4e3031
+    MACsec SAK Use parameter set
+        Parameter set type: MACsec SAK Use (3)
+        00.. .... = Latest Key AN: 0
+        ..1. .... = Latest Key tx: True
+        ...1 .... = Latest Key rx: True
+        .... 00.. = Old Key AN: 0
+        .... ..0. = Old Key tx: False
+        .... ...0 = Old Key rx: False
+        0... .... = Plain tx: False
+        .0.. .... = Plain rx: False
+        ...1 .... = Delay protect: True
+        .... 0000 0010 1000 = Parameter set body length: 40
+        Latest Key: Key Server Member Identifier: aa01aa02aa03aa04aa05aa06
+        Latest Key: Key Number: 00000001
+        Latest Key: Lowest Acceptable PN (32 MSB): 00000001
+        Old Key: Key Server Member Identifier: 000000000000000000000000
+        Old Key: Key Number: 00000000
+        Old Key: Lowest Acceptable PN (32 MSB): 00000001
+    Live Peer List Parameter set
+        Parameter set type: Live Peer List (1)
+        .... 0000 0010 0000 = Parameter set body length: 32
+        Peer Member Identifier: aa01aa02aa03aa04aa05aa06
+        Peer Message Number: 00000002
+        Peer Member Identifier: bb01bb02bb03bb04bb05bb06
+        Peer Message Number: 00000002
+    Integrity Check Value: 650b8669b72f7b3d8fb91f75b65707d3
+
+Frame 7: Packet, 162 bytes on wire (1296 bits), 162 bytes captured (1296 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:26.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:26.000000000 UTC
+    Epoch Arrival Time: 1700000006.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 6 seconds]
+    Frame Number: 7
+    Frame Length: 162 bytes (1296 bits)
+    Capture Length: 162 bytes (1296 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:eapol]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0a (02:00:00:00:00:0a), Dst: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+    Destination: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+        .... ..0. .... .... .... .... = LG bit: Globally unique address (factory default)
+        .... ...1 .... .... .... .... = IG bit: Group address (multicast/broadcast)
+    Source: 02:00:00:00:00:0a (02:00:00:00:00:0a)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1X Authentication (0x888e)
+    [Stream index: 0]
+802.1X Authentication
+    Version: 802.1X-2010 (3)
+    Type: MKA (5)
+    Length: 144
+MACsec Key Agreement
+    Basic Parameter set
+        MKA Version Identifier: 2
+        Key Server Priority: 16
+        1... .... = Key Server: True
+        .1.. .... = MACsec Desired: True
+        ..11 .... = MACsec Capability: MACsec Integrity with/without confidentiality, confidentiality offset 0, 30, or 50 (3)
+        .... 0000 0010 1100 = Parameter set body length: 44
+        SCI: 02000000000a0001
+        Actor Member Identifier: aa01aa02aa03aa04aa05aa06
+        Actor Message Number: 00000003
+        Algorithm Agility: IEEE Std 802.1X-2010 (0x0080c201)
+        CAK Name: 4d41435345432d4c41422d434b4e3031
+    MACsec SAK Use parameter set
+        Parameter set type: MACsec SAK Use (3)
+        00.. .... = Latest Key AN: 0
+        ..1. .... = Latest Key tx: True
+        ...1 .... = Latest Key rx: True
+        .... 00.. = Old Key AN: 0
+        .... ..0. = Old Key tx: False
+        .... ...0 = Old Key rx: False
+        0... .... = Plain tx: False
+        .0.. .... = Plain rx: False
+        ...1 .... = Delay protect: True
+        .... 0000 0010 1000 = Parameter set body length: 40
+        Latest Key: Key Server Member Identifier: aa01aa02aa03aa04aa05aa06
+        Latest Key: Key Number: 00000001
+        Latest Key: Lowest Acceptable PN (32 MSB): 00000001
+        Old Key: Key Server Member Identifier: 000000000000000000000000
+        Old Key: Key Number: 00000000
+        Old Key: Lowest Acceptable PN (32 MSB): 00000001
+    Live Peer List Parameter set
+        Parameter set type: Live Peer List (1)
+        .... 0000 0010 0000 = Parameter set body length: 32
+        Peer Member Identifier: bb01bb02bb03bb04bb05bb06
+        Peer Message Number: 00000002
+        Peer Member Identifier: cc11cc12cc13cc14cc15cc16
+        Peer Message Number: 00000002
+    Integrity Check Value: 26d1c82f271a441c9b7f003cc54115b7
+
+Frame 8: Packet, 84 bytes on wire (672 bits), 84 bytes captured (672 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:27.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:27.000000000 UTC
+    Epoch Arrival Time: 1700000007.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 7 seconds]
+    Frame Number: 8
+    Frame Length: 84 bytes (672 bits)
+    Capture Length: 84 bytes (672 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:macsec:data]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0a (02:00:00:00:00:0a), Dst: 02:00:00:00:00:0b (02:00:00:00:00:0b)
+    Destination: 02:00:00:00:00:0b (02:00:00:00:00:0b)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Source: 02:00:00:00:00:0a (02:00:00:00:00:0a)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1AE (MACsec) (0x88e5)
+    [Stream index: 3]
+802.1AE Security Tag
+    0010 11.. = TCI: 0x0b, VER: 0x0, SC, E, C
+        0... .... = VER: 0x0
+        .0.. .... = ES: Not set
+        ..1. .... = SC: Set
+        ...0 .... = SCB: Not set
+        .... 1... = E: Set
+        .... .1.. = C: Set
+    .... ..00 = AN: 0x0
+    Short length: 40
+    Packet number: 1
+    System Identifier: 02:00:00:00:00:0a (02:00:00:00:00:0a)
+    Port Identifier: 1
+    ICV: 93ccecd083729a06d8bf7297b097db47
+    [Verification Info]
+        [Frame Verification Successful: False]
+Data (40 bytes)
+
+0000  45 9d 7b 17 40 1a 00 6c 7e 10 7e 01 f5 ba fe f3   E.{.@..l~.~.....
+0010  eb 30 73 86 a9 3c 1b b6 ca 08 30 c5 27 f3 82 a4   .0s..<....0.'...
+0020  d7 1a bd 54 1c 6e f1 64                           ...T.n.d
+    Data: 459d7b17401a006c7e107e01f5bafef3eb307386a93c1bb6ca0830c527f382a4d71abd541c6ef164
+    [Length: 40]
+
+Frame 9: Packet, 84 bytes on wire (672 bits), 84 bytes captured (672 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:28.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:28.000000000 UTC
+    Epoch Arrival Time: 1700000008.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 8 seconds]
+    Frame Number: 9
+    Frame Length: 84 bytes (672 bits)
+    Capture Length: 84 bytes (672 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:macsec:data]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0b (02:00:00:00:00:0b), Dst: 02:00:00:00:00:0c (02:00:00:00:00:0c)
+    Destination: 02:00:00:00:00:0c (02:00:00:00:00:0c)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Source: 02:00:00:00:00:0b (02:00:00:00:00:0b)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1AE (MACsec) (0x88e5)
+    [Stream index: 4]
+802.1AE Security Tag
+    0010 11.. = TCI: 0x0b, VER: 0x0, SC, E, C
+        0... .... = VER: 0x0
+        .0.. .... = ES: Not set
+        ..1. .... = SC: Set
+        ...0 .... = SCB: Not set
+        .... 1... = E: Set
+        .... .1.. = C: Set
+    .... ..00 = AN: 0x0
+    Short length: 40
+    Packet number: 1
+    System Identifier: 02:00:00:00:00:0b (02:00:00:00:00:0b)
+    Port Identifier: 1
+    ICV: 1a0d0b8adf0624076ed7edbacc0aac2b
+    [Verification Info]
+        [Frame Verification Successful: False]
+Data (40 bytes)
+
+0000  26 da 7b 83 c5 1f a5 cd 01 e3 f3 73 1e 08 c5 d8   &.{........s....
+0010  8c b6 90 71 7d fd ad 42 05 40 c1 d4 ae 5b 58 ec   ...q}..B.@...[X.
+0020  87 7b fe fa 5a 2f 65 fa                           .{..Z/e.
+    Data: 26da7b83c51fa5cd01e3f3731e08c5d88cb690717dfdad420540c1d4ae5b58ec877bfefa5a2f65fa
+    [Length: 40]
+
+Frame 10: Packet, 84 bytes on wire (672 bits), 84 bytes captured (672 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:29.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:29.000000000 UTC
+    Epoch Arrival Time: 1700000009.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 9 seconds]
+    Frame Number: 10
+    Frame Length: 84 bytes (672 bits)
+    Capture Length: 84 bytes (672 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:macsec:data]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0c (02:00:00:00:00:0c), Dst: 02:00:00:00:00:0a (02:00:00:00:00:0a)
+    Destination: 02:00:00:00:00:0a (02:00:00:00:00:0a)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Source: 02:00:00:00:00:0c (02:00:00:00:00:0c)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1AE (MACsec) (0x88e5)
+    [Stream index: 5]
+802.1AE Security Tag
+    0010 11.. = TCI: 0x0b, VER: 0x0, SC, E, C
+        0... .... = VER: 0x0
+        .0.. .... = ES: Not set
+        ..1. .... = SC: Set
+        ...0 .... = SCB: Not set
+        .... 1... = E: Set
+        .... .1.. = C: Set
+    .... ..00 = AN: 0x0
+    Short length: 40
+    Packet number: 1
+    System Identifier: 02:00:00:00:00:0c (02:00:00:00:00:0c)
+    Port Identifier: 1
+    ICV: 3c59dfd08a072039281c376d1fc8f04a
+    [Verification Info]
+        [Frame Verification Successful: False]
+Data (40 bytes)
+
+0000  9f 3c 36 c4 72 f7 de 91 ea 61 5a 2f 2b e8 8d 8e   .<6.r....aZ/+...
+0010  be 23 bc 3b d3 3a 26 7e 2e 79 fa ee 27 c0 51 d2   .#.;.:&~.y..'.Q.
+0020  94 8f fc c8 78 f3 1f 2c                           ....x..,
+    Data: 9f3c36c472f7de91ea615a2f2be88d8ebe23bc3bd33a267e2e79faee27c051d2948ffcc878f31f2c
+    [Length: 40]
+
+Frame 11: Packet, 162 bytes on wire (1296 bits), 162 bytes captured (1296 bits)
+    Encapsulation type: Ethernet (1)
+    Arrival Time: Nov 15, 2023 06:13:30.000000000 CST
+    UTC Arrival Time: Nov 14, 2023 22:13:30.000000000 UTC
+    Epoch Arrival Time: 1700000010.000000000
+    [Time shift for this packet: 0.000000000 seconds]
+    [Time delta from previous captured frame: 1 second]
+    [Time delta from previous displayed frame: 1 second]
+    [Time since reference or first frame: 10 seconds]
+    Frame Number: 11
+    Frame Length: 162 bytes (1296 bits)
+    Capture Length: 162 bytes (1296 bits)
+    [Frame is marked: False]
+    [Frame is ignored: False]
+    [Protocols in frame: eth:ethertype:eapol]
+    Character encoding: ASCII (0)
+Ethernet II, Src: 02:00:00:00:00:0c (02:00:00:00:00:0c), Dst: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+    Destination: Nearest-non-TPMR-Bridge (01:80:c2:00:00:03)
+        .... ..0. .... .... .... .... = LG bit: Globally unique address (factory default)
+        .... ...1 .... .... .... .... = IG bit: Group address (multicast/broadcast)
+    Source: 02:00:00:00:00:0c (02:00:00:00:00:0c)
+        .... ..1. .... .... .... .... = LG bit: Locally administered address (this is NOT the factory default)
+        .... ...0 .... .... .... .... = IG bit: Individual address (unicast)
+    Type: 802.1X Authentication (0x888e)
+    [Stream index: 2]
+802.1X Authentication
+    Version: 802.1X-2010 (3)
+    Type: MKA (5)
+    Length: 144
+MACsec Key Agreement
+    Basic Parameter set
+        MKA Version Identifier: 2
+        Key Server Priority: 48
+        0... .... = Key Server: False
+        .1.. .... = MACsec Desired: True
+        ..11 .... = MACsec Capability: MACsec Integrity with/without confidentiality, confidentiality offset 0, 30, or 50 (3)
+        .... 0000 0010 1100 = Parameter set body length: 44
+        SCI: 02000000000c0001
+        Actor Member Identifier: cc11cc12cc13cc14cc15cc16
+        Actor Message Number: 00000003
+        Algorithm Agility: IEEE Std 802.1X-2010 (0x0080c201)
+        CAK Name: 4d41435345432d4c41422d434b4e3031
+    MACsec SAK Use parameter set
+        Parameter set type: MACsec SAK Use (3)
+        00.. .... = Latest Key AN: 0
+        ..1. .... = Latest Key tx: True
+        ...1 .... = Latest Key rx: True
+        .... 00.. = Old Key AN: 0
+        .... ..0. = Old Key tx: False
+        .... ...0 = Old Key rx: False
+        0... .... = Plain tx: False
+        .0.. .... = Plain rx: False
+        ...1 .... = Delay protect: True
+        .... 0000 0010 1000 = Parameter set body length: 40
+        Latest Key: Key Server Member Identifier: aa01aa02aa03aa04aa05aa06
+        Latest Key: Key Number: 00000001
+        Latest Key: Lowest Acceptable PN (32 MSB): 00000001
+        Old Key: Key Server Member Identifier: 000000000000000000000000
+        Old Key: Key Number: 00000000
+        Old Key: Lowest Acceptable PN (32 MSB): 00000001
+    Live Peer List Parameter set
+        Parameter set type: Live Peer List (1)
+        .... 0000 0010 0000 = Parameter set body length: 32
+        Peer Member Identifier: aa01aa02aa03aa04aa05aa06
+        Peer Message Number: 00000003
+        Peer Member Identifier: bb01bb02bb03bb04bb05bb06
+        Peer Message Number: 00000002
+    Integrity Check Value: c1afe546601512fcf81966ad9f4cbaa8
+

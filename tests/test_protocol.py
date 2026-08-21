@@ -51,8 +51,10 @@ from macsec_lab.scenario import (
     mka_after_eap,
     mka_co30,
     mka_handshake,
+    mka_multi_peer,
     mka_rekey,
     mka_xpn,
+    multi_peer_c,
 )
 
 
@@ -312,6 +314,76 @@ def user_of(raw: bytes, keys: LabKeys) -> bytes:
     src_ip = "10.10.0.10" if raw[6:12] == keys.a.mac else "10.10.0.20"
     dst_ip = "10.10.0.20" if raw[6:12] == keys.a.mac else "10.10.0.10"
     return ipv4_icmp_echo(src_ip, dst_ip, ident=0x4242, seq=12)
+
+
+class MultiPeerCa(unittest.TestCase):
+    """One CAK/CKN, three members, one Key Server, ONE SAK, three SCs.
+
+    The point: a CA is group-keyed, not a pair. The Key Server hands out a
+    single SAK; each member transmits on its own SC (own SCI / PN space), so
+    receivers key RX SAs by (SCI, AN) and explicit SCI is mandatory on the
+    wire once the CA has more than two members.
+    """
+
+    def test_all_mkpdus_share_one_cak_and_verify(self) -> None:
+        keys = LabKeys.default()
+        c = multi_peer_c(keys)
+        frames = mka_multi_peer(keys)
+        self.assertEqual(len(frames), 11)
+        priorities = set()
+        for comment, raw in frames:
+            if int.from_bytes(raw[12:14], "big") != 0x888E:
+                continue
+            p = parse_eapol_mka(raw, keys.ick, keys.kek)
+            self.assertTrue(p["icv_ok"], comment)
+            self.assertEqual(p["basic"].ckn, keys.ckn, comment)  # one CA
+            priorities.add((p["basic"].ks_priority, p["basic"].key_server))
+        self.assertEqual(priorities, {(16, True), (32, False), (48, False)})
+
+    def test_ks_distributes_one_sak_and_lists_two_live_peers(self) -> None:
+        keys = LabKeys.default()
+        c = multi_peer_c(keys)
+        frames = mka_multi_peer(keys)
+        p = parse_eapol_mka(frames[3][1], keys.ick, keys.kek)  # A MN=2
+        dist = [s for s in p["param_sets"] if s["code"] == 4]
+        live = [s for s in p["param_sets"] if s["code"] == 1]
+        self.assertEqual(len(dist), 1)
+        self.assertEqual(dist[0]["unwrapped_sak"], keys.sak)
+        self.assertEqual((dist[0]["body"].an, dist[0]["body"].kn), (0, 1))
+        self.assertEqual(len(live[0]["peers"]), 2, "KS Live Peer List must carry both other members")
+        seen_mis = {peer.mi for peer in live[0]["peers"]}
+        self.assertEqual(seen_mis, {keys.b.mi, c.mi})
+        # Exactly one Distributed SAK in the whole story: group-keyed CA.
+        total = sum(
+            1
+            for _, raw in frames
+            if int.from_bytes(raw[12:14], "big") == 0x888E
+            and any(s["code"] == 4 for s in parse_eapol_mka(raw, keys.ick)["param_sets"])
+        )
+        self.assertEqual(total, 1)
+
+    def test_data_frames_three_scs_same_pn_one_sak(self) -> None:
+        keys = LabKeys.default()
+        c = multi_peer_c(keys)
+        data = [
+            (co, raw)
+            for co, raw in mka_multi_peer(keys)
+            if int.from_bytes(raw[12:14], "big") == 0x88E5
+        ]
+        self.assertEqual(len(data), 3)
+        scis, pns = set(), []
+        for comment, raw in data:
+            p = parse_frame(raw, keys.sak)  # explicit SCI: no hint needed
+            self.assertTrue(p["icv_ok"], comment)
+            self.assertEqual(p["user_data"][:2], b"\x08\x00", comment)
+            self.assertTrue(p["tag"].sc, "multi-peer frames must carry explicit SCI")
+            self.assertEqual(p["tag"].an, 0, comment)
+            scis.add(p["sci"])
+            pns.append(p["tag"].pn)
+        # Three distinct SCIs (a, b, c), each with PN=1 — same PN in three
+        # different SAs is not a replay.
+        self.assertEqual(scis, {keys.a.sci, keys.b.sci, c.sci})
+        self.assertEqual(pns, [1, 1, 1])
 
 
 class MermaidLabels(unittest.TestCase):

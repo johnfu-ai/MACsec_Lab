@@ -31,6 +31,23 @@ Same CAK/CKN on both sides (PSK). A wins Key Server (smaller priority). A wraps 
 
 CAK/CKN come from the EAP MSK (see `keys.json` → `eap`). MKPDUs after EAP-Success use the same parameter sets as the PSK handshake. Full EAP-TLS is in IEEE_802.1X_Lab.
 
+## Multi-member CA (`mka-multi-peer.pcap`)
+
+A CA is **group-keyed, not a pair**: every port configured with the same CAK/CKN joins the same CA. Three members, one Key Server, **one** SAK for everyone, three unidirectional SCs:
+
+```
+        node-a (Key Server, prio 16)          10.10.0.10
+       /            \
+   node-b (32)     node-c (48)               10.10.0.20 / .30
+
+  A distributes SAK#1 once (group-keyed)
+  A→B, B→C, C→A each transmit on their own SC (own SCI, own PN space)
+  every data frame carries explicit SCI (SC=1) — the ES=1 no-SCI
+  shortcut is only valid for a two-member CA
+```
+
+Per-frame decode: [captures/decoded/18-mka-multi-peer.md](../captures/decoded/18-mka-multi-peer.md). Key takeaways: the receiver instantiates one RX SA per remote member, keyed by (SCI, AN); three frames with PN=1 coexist without being a replay (different SCs).
+
 ## Live replay (`sudo make lab`)
 
 ```

@@ -20,6 +20,7 @@ from .keys import (
     IEEE_GCM_KEY_128,
     IEEE_GCM_KEY_256,
     LabKeys,
+    Peer,
 )
 from .l3 import ipv4_icmp_echo
 from .macsec import SecTAG, protect_frame
@@ -435,6 +436,134 @@ def mka_xpn(keys: LabKeys) -> list[tuple[str, bytes]]:
                 _sak_use((3, True, True), a.mi, 4, 2),
             ],
         ),
+    ))
+    return frames
+
+
+def multi_peer_c(keys: LabKeys) -> Peer:
+    """Third member of the shared-CAK CA (mka-multi-peer story): node-c.
+
+    Same CAK/CKN as node-a/node-b — one Connectivity Association, three
+    members, Key Server still node-a (priority 16 < 32 < 48).
+    """
+    return Peer.make(
+        "node-c",
+        bytes.fromhex("02000000000c"),
+        1,
+        48,
+        bytes.fromhex("cc11cc12cc13cc14cc15cc16"),
+    )
+
+
+def mka_multi_peer(keys: LabKeys) -> list[tuple[str, bytes]]:
+    """Shared-CAK multi-member CA: node-a/b/c, one Key Server, ONE SAK.
+
+    A CA is not inherently point-to-point: every member configured with the
+    same CAK/CKN joins the same CA. The elected Key Server distributes a
+    single SAK once (group-keyed), and every member transmits on its own SC —
+    so the receiver side instantiates one RX SA per remote member, keyed by
+    (SCI, AN). Two consequences visible in this capture:
+
+    - every data frame carries an explicit SCI (SC=1) — the ES=1 "point-to-
+      point, SCI omitted" shortcut is only valid when exactly two members
+      share the CA;
+    - three frames with PN=1 coexist (one per SC) without being a replay.
+    """
+    a, b = keys.a, keys.b
+    c = multi_peer_c(keys)
+    wrapped = wrap_sak(keys.kek, keys.sak)
+    frames: list[tuple[str, bytes]] = []
+
+    def _p(peer, mn: int, key_server: bool, param_sets, label: str):
+        return (
+            label,
+            build_mkpdu_frame(
+                sa=peer.mac, ick=keys.ick, basic=_basic(peer, keys, mn, key_server),
+                param_sets=param_sets,
+            ),
+        )
+
+    frames.append(_p(a, 1, True, [], "A MN=1 hello (Key Server claim, prio 16 — smallest priority wins)"))
+    frames.append(_p(
+        b, 1, False, [PeerList(2, [PeerTuple(a.mi, 1)])],
+        "B MN=1 hello (Potential Peer List: A; prio 32)",
+    ))
+    frames.append(_p(
+        c, 1, False, [PeerList(2, [PeerTuple(a.mi, 1), PeerTuple(b.mi, 1)])],
+        "C MN=1 hello (Potential Peer List: A + B; prio 48 — three members, one CAK/CKN)",
+    ))
+    frames.append(_p(
+        a, 2, True,
+        [
+            DistributedSak(an=keys.an, confidentiality_offset=0, kn=keys.kn, wrapped_sak=wrapped),
+            SakUse(
+                latest_an=keys.an, latest_tx=True, latest_rx=False, delay_protect=True,
+                latest_server_mi=a.mi, latest_kn=keys.kn, latest_lpn=1,
+            ),
+            PeerList(1, [PeerTuple(b.mi, 1), PeerTuple(c.mi, 1)]),
+        ],
+        "A MN=2 Key Server: ONE Distributed SAK for the whole CA + SAK Use (tx) "
+        "+ Live Peer List with TWO tuples",
+    ))
+    frames.append(_p(
+        b, 2, False,
+        [
+            SakUse(
+                latest_an=keys.an, latest_tx=True, latest_rx=True, delay_protect=True,
+                latest_server_mi=a.mi, latest_kn=keys.kn, latest_lpn=1,
+            ),
+            PeerList(1, [PeerTuple(a.mi, 2), PeerTuple(c.mi, 1)]),
+        ],
+        "B MN=2: SAK Use tx+rx (installed the SAK); Live Peer List [A, C]",
+    ))
+    frames.append(_p(
+        c, 2, False,
+        [
+            SakUse(
+                latest_an=keys.an, latest_tx=True, latest_rx=True, delay_protect=True,
+                latest_server_mi=a.mi, latest_kn=keys.kn, latest_lpn=1,
+            ),
+            PeerList(1, [PeerTuple(a.mi, 2), PeerTuple(b.mi, 2)]),
+        ],
+        "C MN=2: SAK Use tx+rx; Live Peer List [A, B]",
+    ))
+    frames.append(_p(
+        a, 3, True,
+        [
+            SakUse(
+                latest_an=keys.an, latest_tx=True, latest_rx=True, delay_protect=True,
+                latest_server_mi=a.mi, latest_kn=keys.kn, latest_lpn=1,
+            ),
+            PeerList(1, [PeerTuple(b.mi, 2), PeerTuple(c.mi, 2)]),
+        ],
+        "A MN=3: SAK Use tx+rx — all three members live on the single SAK",
+    ))
+
+    # All-to-all data plane: each member sends from its own SC (own SCI, own
+    # PN space) on the same SAK. Explicit SCI is mandatory here (SC=1).
+    ips = {a.mac: "10.10.0.10", b.mac: "10.10.0.20", c.mac: "10.10.0.30"}
+    seq = 20
+    for src, dst in [(a, b), (b, c), (c, a)]:
+        user = ipv4_icmp_echo(ips[src.mac], ips[dst.mac], ident=0x4242, seq=seq)
+        tag = SecTAG.build(pn=1, an=keys.an, encrypt=True, sci=src.sci)
+        frames.append((
+            f"{src.name[-1].upper()}→{dst.name[-1].upper()} data PN=1 AN=0 SC=1 "
+            f"ICMP seq={seq} — {src.name}'s own SC/SCI; explicit SCI because the CA "
+            f"has more than two members",
+            protect_frame(dst.mac, src.mac, user, keys.sak, tag, src.sci),
+        ))
+        seq += 1
+
+    frames.append(_p(
+        c, 3, False,
+        [
+            SakUse(
+                latest_an=keys.an, latest_tx=True, latest_rx=True, delay_protect=True,
+                latest_server_mi=a.mi, latest_kn=keys.kn, latest_lpn=1,
+            ),
+            PeerList(1, [PeerTuple(a.mi, 3), PeerTuple(b.mi, 2)]),
+        ],
+        "C MN=3 keepalive: one CAK, one KS, one SAK, three unidirectional SCs",
     ))
     return frames
 

@@ -41,6 +41,19 @@
     "B→A PN64=0x100000003: own SA, own SSCI, own PN64 space — the nonce is per-SC",
     "B MN=10 keepalive on the XPN SA: everything above 2^32 is business as usual"
   ],
+  "mka-multi-peer.pcap": [
+    "A MN=1 hello (Key Server claim, prio 16 — smallest priority wins)",
+    "B MN=1 hello (Potential Peer List: A; prio 32)",
+    "C MN=1 hello (Potential Peer List: A + B; prio 48 — three members, one CAK/CKN)",
+    "A MN=2 Key Server: ONE Distributed SAK for the whole CA + SAK Use (tx) + Live Peer List with TWO tuples",
+    "B MN=2: SAK Use tx+rx (installed the SAK); Live Peer List [A, C]",
+    "C MN=2: SAK Use tx+rx; Live Peer List [A, B]",
+    "A MN=3: SAK Use tx+rx — all three members live on the single SAK",
+    "A→B data PN=1 AN=0 SC=1 ICMP seq=20 — node-a's own SC/SCI; explicit SCI because the CA has more than two members",
+    "B→C data PN=1 AN=0 SC=1 ICMP seq=21 — node-b's own SC/SCI; explicit SCI because the CA has more than two members",
+    "C→A data PN=1 AN=0 SC=1 ICMP seq=22 — node-c's own SC/SCI; explicit SCI because the CA has more than two members",
+    "C MN=3 keepalive: one CAK, one KS, one SAK, three unidirectional SCs"
+  ],
   "macsec-lab-encrypted.pcap": [
     "A→B ICMP echo seq=1 (encrypted)",
     "B→A ICMP seq=1 (encrypted)",
