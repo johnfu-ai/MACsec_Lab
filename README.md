@@ -161,7 +161,7 @@ Key Server 随机生成 SAK  →  AES-KW(KEK, SAK) 经 MKA 分发  →  SecY GCM
 - [docs/protocol-analysis.md](docs/protocol-analysis.md) — **每一条消息的偏移级解析**（session-full）
 - [docs/mka-protocol-analysis.md](docs/mka-protocol-analysis.md) — 含 PSK vs EAP 成功之后
 - [docs/macsec-protocol-analysis.md](docs/macsec-protocol-analysis.md)
-- [docs/glossary.md](docs/glossary.md)
+- [docs/glossary.md](docs/glossary.md) — 中英对照术语库：按协议/密钥/通道/帧字段/机制/XPN/生态分组的 80+ 术语
 - [docs/deployments.md](docs/deployments.md) — 真实世界：Linux wpa_supplicant/ip macsec、厂商、NIC 卸载、运维清单
 - [docs/vs-ipsec.md](docs/vs-ipsec.md)（对照 IPsec_Lab）
 - [docs/attacks.md](docs/attacks.md) — 攻击面分析：nonce 复用/重放/延迟重放/降级/离线暴力/组密钥局限，每条带实验室证据
