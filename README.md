@@ -154,6 +154,7 @@ Key Server 随机生成 SAK  →  AES-KW(KEK, SAK) 经 MKA 分发  →  SecY GCM
 详解：
 
 - [docs/key-hierarchy.md](docs/key-hierarchy.md) — CAK / CKN / KEK / ICK / SAK 是什么、怎么生成
+- [docs/secy-processing.md](docs/secy-processing.md) — SecY 收发处理模型：受控/非受控口、发送六步、接收五道关、validate-frames 策略
 - [docs/lifecycle.md](docs/lifecycle.md) — 换钥（rekey）、AN/KN、PN 耗尽、重放窗口、Delay Protect、判死
 - [docs/cipher-suites.md](docs/cipher-suites.md) — GCM-AES-128/256/XPN 四套件对照、协商、XPN nonce 构造
 - [docs/protocol-analysis.md](docs/protocol-analysis.md) — **每一条消息的偏移级解析**（session-full）
