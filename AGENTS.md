@@ -34,10 +34,22 @@ When asked "does it work?", run `make verify` and read the output.
 ## Layout
 
 - `macsec_lab/crypto.py` — GCM, AES-CMAC KDF, AES-KW, XPN nonce/salt/SSCI helpers
-- `macsec_lab/macsec.py` — SecTAG, `XpnPnTracker` (64-bit PN recovery, 802.1AE 10.6)
+- `macsec_lab/macsec.py` — SecTAG, `XpnPnTracker` (64-bit PN recovery, 802.1AE 10.6), `ReplayWindow` (receive-side replay/delay-protect verdicts, Clause 10)
 - `macsec_lab/mka.py` — MKPDU
-- `macsec_lab/scenario.py` — PSK handshake, EAP-Success + MKA, SAK rekey, co30, XPN story, ICMP frames
+- `macsec_lab/scenario.py` — PSK handshake, EAP-Success + MKA, SAK rekey, co30, XPN story, multi-peer CA, replay window, delay protect, ICMP frames
 - `docs/key-hierarchy.md` — CAK / CKN / KEK / ICK / SAK (PSK vs EAP; SAK is not KDF from CAK)
+- `docs/secy-processing.md` — SecY transmit/receive model, validate-frames modes, discard counters
+- `docs/mka-reference.md` — identifiers, KS election, peer states, per-parameter-set field tables
 - `docs/lifecycle.md` — rekey story (AN/KN rotation, PN exhaustion, SAK retire); capture `mka-rekey.pcap` needs `LabKeys.sak2`
 - `docs/cipher-suites.md` — 128/256/XPN suites; capture `mka-xpn.pcap` needs `LabKeys.sak4` (MKA version 3, non-zero KS SSCI bytes)
+- `docs/attacks.md` / `docs/faq.md` / `docs/glossary.md` / `docs/vs-ipsec.md` — knowledge-base layers (attack analysis, 36 FAQ, 80+ terms, four-protocol comparison)
 - `captures/` — committed pcaps
+
+### Story-key contract (which LabKeys field each capture needs)
+
+| Capture | SAK | AN/KN | Notes |
+|---|---|---|---|
+| `mka-handshake.pcap` / `session-full.pcap` / `macsec-lab-*.pcap` / `macsec-replay.pcap` / `mka-delay-protect.pcap` / `mka-multi-peer.pcap` | `sak` | 0/1 | one CAK universe, MN 1-3 then per-story |
+| `mka-rekey.pcap` | `sak` → `sak2` | 0/1 → 1/2 | needs `LabKeys.sak2` |
+| `mka-co30.pcap` | `sak3` | 2/3 | co=30 signaled in Distributed SAK |
+| `mka-xpn.pcap` | `sak4` | 3/4 | MKA version 3, XPN suite ID, SSCI/salt |

@@ -14,8 +14,9 @@ The current WSL2 kernel reports `# CONFIG_MACSEC is not set`. Docker containers 
 - PSK CAK (static CKN/CAK), point-to-point CA, GCM-AES-128
 - MKA: Basic, Potential/Live Peer List, Distributed SAK, SAK Use, 16-octet ICV
 - MACsec: SecTAG with and without explicit SCI, confidentiality and integrity-only
-- Added after the initial spec (each with its own capture): EAP-derived CAK/CKN from the MSK, SAK rekey (AN/KN rotation), confidentiality offset 30, GCM-AES-256 IEEE vectors, and the GCM-AES-XPN-128 story (`mka-xpn.pcap`: cipher-suite ID in Distributed SAK, SSCI/Salt nonce, PN64 across 2^32). XPN is construction-level only — the public draft leaves the Annex C ICVs blank, so there is no byte-exact vector to check against.
-- Out of scope: MKA announcements, VLAN-in-clear, XPN-256 data plane (same construction as XPN-128 with a 32-octet SAK)
+- Added after the initial spec (each with its own capture): EAP-derived CAK/CKN from the MSK, SAK rekey (AN/KN rotation), confidentiality offset 30, GCM-AES-256 IEEE vectors, the GCM-AES-XPN-128 story (`mka-xpn.pcap`: cipher-suite ID in Distributed SAK, SSCI/Salt nonce, PN64 across 2^32), the multi-member CA story (`mka-multi-peer.pcap`: one CAK, three members, one SAK, three SCs), the receiver replay-window story (`macsec-replay.pcap` + `ReplayWindow` model), and the delay-protect story (`mka-delay-protect.pcap`: withheld frame dropped below the advertised LLPN floor). XPN is construction-level only — the public draft leaves the Annex C ICVs blank, so there is no byte-exact vector to check against.
+- Knowledge-base docs (2026-08 expansion): secy-processing, mka-reference, attacks (full analysis), faq, glossary, vs-ipsec (four protocols), plus the README knowledge map and learning path.
+- Out of scope: MKA announcements, VLAN-in-clear, XPN-256 data plane (same construction as XPN-128 with a 32-octet SAK), 802.1AEcg EDE / multiple transmit SCs
 
 ## Deliverables
 1. `captures/*.pcap` + `keys.json`

@@ -113,7 +113,7 @@ interface:
 4. **重放窗口 vs 微突发**：窗口太小会在乱序/微突发时丢合法帧；先看 `ip macsec show` 的 replay 计数再调。
 5. **PSK 的运营成本**：N 条链路 N 套 CAK，轮换靠人。规模上去改 802.1X（EAP）动态发钥，或至少 keychain 里预排两代密钥。
 6. **监控什么**：MKA 会话状态（对端 alive）、PN 增速（多久换钥）、ICV 校验失败计数（错误钥匙/线路误码）、明文帧计数（策略泄漏）。
-7. **抓包排障**：镜像口看到的是密文属正常；要么在 SecY 之内抓（解密后），要么用 Wireshark + SAK 解密（见 [wireshark-howto.md](wireshark-howto.md)）。
+7. **抓包排障**：镜像口看到的是密文属正常；要么在 SecY 之内抓（解密后），要么用 Wireshark + SAK 解密（见 [capture-guide.md](capture-guide.md)）。
 8. **和 Q-in-Q / 隧道的叠层顺序**：外层 VLAN tag 在 MACsec 之外时是明文；规划 Ethertype 顺序（0x88E5 在内层），两端一致。
 
 ## 6. 从仓库走向真实网络的学习路径
