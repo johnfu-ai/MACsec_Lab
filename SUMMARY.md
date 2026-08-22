@@ -1,6 +1,6 @@
 # 目录
 
-* [MACsec 权威指南](README.md)
+* [MACsec 学习指南](README.md)
 
 ## 第一部分：基础篇
 
@@ -121,7 +121,7 @@
     * [D.05 IEEE 向量：加密](captures/decoded/05-ieee-encrypt.md)
     * [D.06 完整会话 13 帧](captures/decoded/06-session-full.md)
     * [D.07 EAP 之后的 MKA](captures/decoded/11-mka-after-eap.md)
-    * [D.08 SAK 重加密](captures/decoded/13-mka-rekey.md)
+    * [D.08 SAK 换钥](captures/decoded/13-mka-rekey.md)
     * [D.09 Confidentiality Offset 30](captures/decoded/14-mka-co30.md)
     * [D.10 IEEE 向量：完整性 256](captures/decoded/15-ieee-integrity-256.md)
     * [D.11 IEEE 向量：加密 256](captures/decoded/16-ieee-encrypt-256.md)

@@ -18,18 +18,22 @@
 
 ## C.3 范围
 
-- PSK CAK（静态 CKN/CAK）、点对点 CA、GCM-AES-128
+覆盖：
+
+- PSK CAK（静态 CKN/CAK）与 EAP 派生 CAK/CKN（来自 MSK）
+- 点对点与多成员 CA（一把 CAK、一把 SAK、每成员各自 SC）
 - MKA：Basic、Potential/Live Peer List、Distributed SAK、SAK Use、16 字节 ICV
-- MACsec：带与不带显式 SCI 的 SecTAG、机密性与仅完整性两种模式
-- 初版规格后陆续加入（每条有专属抓包）：EAP 派生 CAK/CKN（来自 MSK）、SAK 重加密（AN/KN 轮转）、confidentiality offset 30、GCM-AES-256 IEEE 向量、GCM-AES-XPN-128 故事线（`mka-xpn.pcap`：Distributed SAK 里的套件 ID、SSCI/Salt nonce、PN64 跨 2^32）、多成员 CA 故事线（`mka-multi-peer.pcap`：一把 CAK、三个成员、一把 SAK、三个 SC）、接收端重放窗口故事线（`macsec-replay.pcap` + `ReplayWindow` 模型）、Delay Protect 故事线（`mka-delay-protect.pcap`：被截留的帧低于宣告的 LLPN 下沿被弃）。XPN 仅到构造层面——公开草案的 Annex C ICV 留空，没有逐字节向量可对照。
-- 知识库文档（2026-08 扩充）：secy-processing、mka-reference、attacks（完整分析）、faq、glossary、vs-ipsec（四协议）——现已整合为本书正文各章。
-- 范围之外：MKA announcements、VLAN-in-clear、XPN-256 数据面（构造与 XPN-128 相同，仅 SAK 换 32 字节）、802.1AEcg EDE / 多发送 SC
+- MACsec：带与不带显式 SCI 的 SecTAG、机密性与仅完整性、confidentiality offset 30
+- 套件：GCM-AES-128（实验室主路径）、GCM-AES-256 IEEE 向量、GCM-AES-XPN-128 故事线（`mka-xpn.pcap`）
+- 生命周期：SAK 换钥（AN/KN 轮转）、接收端重放窗口、Delay Protect
+
+范围之外：MKA announcements、VLAN-in-clear、XPN-256 数据面（构造与 XPN-128 相同，仅 SAK 换 32 字节）、802.1AEcg EDE / 多发送 SC。XPN 仅到构造层面——公开草案的 Annex C ICV 留空，没有逐字节向量可对照。
 
 ## C.4 交付物
 
 1. `captures/*.pcap` + `keys.json`
 2. `macsec_lab` 解析器与 `captures/decoded/*.md`
-3. 本书中成体系的知识库文档（原 `docs/` 目录，已改为章节结构）
+3. 本书正文（十三章 + 附录）
 4. `make test` / `make verify`
 
 ## C.5 权限

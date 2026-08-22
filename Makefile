@@ -1,7 +1,7 @@
 .PHONY: help test generate analyze all verify lab down clean doctor book serve
 
 help:
-	@echo "MACsec Lab"
+	@echo "MACsec 学习指南"
 	@echo "  make test       - IEEE GCM-AES vectors + MKA/MACsec round-trip"
 	@echo "  make generate   - write reference PCAPs + Markdown field dumps"
 	@echo "  make analyze    - re-parse existing captures/"

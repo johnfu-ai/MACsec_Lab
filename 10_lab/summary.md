@@ -6,7 +6,7 @@
 
 **快速开始**：唯一依赖是 `cryptography`；`make test` 用 IEEE 官方向量裁决密码学实现（35 项），`make generate` 产出抓包与报告，`make verify` 叠加 tshark 协议识别（15 项）。改常量看断言挂掉的顺序，就是概念重要性的顺序。
 
-**抓包导读**：每份 pcap 讲一个故事——握手、EAP 之后、重加密、co30、XPN、多成员、重放窗口、延迟保护——对照表把抓包与正文章节互为索引；`keys.json` 是全部故事线的钥匙串。
+**抓包导读**：每份 pcap 讲一个故事——握手、EAP 之后、换钥、co30、XPN、多成员、重放窗口、延迟保护——对照表把抓包与正文章节互为索引；`keys.json` 是全部故事线的钥匙串。
 
 **Wireshark**：`mka`/`macsec`/`eapol.type == 5` 等过滤器定位协议帧；把 CKN/CAK 填进 MKA 首选项后，ICV 校验、SAK 解封、内层解密全部由 Wireshark 当场完成。
 

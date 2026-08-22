@@ -34,7 +34,7 @@ MKA 是控制面（802.1X）：协商并分发密钥、维持邻居；MACsec 是
 不是。PSK 模式预共享 **CAK + CKN**；SAK 由 Key Server **随机生成**、用 KEK 包裹分发。CAK 从不直接加密用户帧（[第二章](../02_key_hierarchy/README.md)）。
 
 **Q10. KEK 和 ICK 是什么、怎么来的？**
-KEK = KDF(CAK, "IEEE8021 KEK", CKN[0:16])，AES-KeyWrap 包 SAK；ICK = KDF(CAK, "IEEE8021 ICK", CKN[0:16])，算 MKPDU 的 ICV。标签是 12 个 ASCII 字节，多一个少一个都不行（AGENTS 不变量 #5）。
+KEK = KDF(CAK, "IEEE8021 KEK", CKN[0:16])，AES-KeyWrap 包 SAK；ICK = KDF(CAK, "IEEE8021 ICK", CKN[0:16])，算 MKPDU 的 ICV。标签是 12 个 ASCII 字节，多一个少一个都不行（见 [2.3 节](../02_key_hierarchy/2.3_kdf.md)）。
 
 **Q11. EAP 模式下 CAK 从哪来？**
 EAP-Success 后两端都有 MSK，CAK = KDF(MSK[0:16], "IEEE8021 EAP CAK", mac1‖mac2)，CKN 用 16 字节标签 "IEEE8021 EAP CKN" 同理派生（注意与 KEK/ICK 的 12 字节标签不同）。抓包见 `mka-after-eap.pcap`。

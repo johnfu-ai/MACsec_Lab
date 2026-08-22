@@ -1,6 +1,6 @@
 <div align="center">
 
-<h1>MACsec 权威指南</h1>
+<h1>MACsec 学习指南</h1>
 
 <p>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
@@ -20,7 +20,7 @@
 
 以太网主宰着数据中心、运营商网络与企业园区，但原生以太网帧是明文的：任何能接触到链路的设备都可以嗅探、篡改、重放流量。MACsec（IEEE 802.1AE）在链路层为以太网补上了这一课——逐帧认证与加密，对上层协议完全透明；而它的密钥自动化，则由 802.1X 体系中的 MKA 协议完成。
 
-本书是关于 MACsec 与 MKA 的体系化知识库，同时是一个**可验证的实验室**：15 个 Wireshark 可直接打开的参考抓包、与 IEEE 官方测试向量逐字节对齐的密码学实现（GCM-AES-128/256、AES-CMAC、AES-KeyWrap，ICV 可验、SAK 可解），外加覆盖协议、密钥、攻防、部署与选型的十三章正文。书里的每一个关键论断，都能在某个 pcap 或某条测试断言里找到证据。
+《MACsec 学习指南》是关于 MACsec 与 MKA 的体系化知识库，同时是一个**可验证的实验室**：15 个 Wireshark 可直接打开的参考抓包、与 IEEE 官方测试向量逐字节对齐的密码学实现（GCM-AES-128/256、AES-CMAC、AES-KeyWrap，ICV 可验、SAK 可解），外加覆盖协议、密钥、攻防、部署与选型的十三章正文。书里的每一个关键论断，都能在某个 pcap 或某条测试断言里找到证据。
 
 无论你是希望看懂 MACsec 抓包的网络工程师、评估二层加密方案的安全工程师，还是准备落地部署的架构师，都能从本书中获得完整的知识路径。
 

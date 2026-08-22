@@ -7,7 +7,7 @@ MACsec Lab — decoded learning artifacts
 04-ieee-integrity.md / 05-ieee-encrypt.md  IEEE 官方 GCM 向量
 06-session-full.md                  完整会话 13 帧（与 05_wire_format/5.3、5.4 同源）
 11-mka-after-eap.md                 EAP-Success 之后的 MKA（Authenticator / Supplicant）
-13-mka-rekey.md                     SAK 重加密：AN=0 → AN=1 换钥全过程
+13-mka-rekey.md                     SAK 换钥：AN=0 → AN=1 全过程
 14-mka-co30.md                      Confidentiality Offset 30：内层 IP 头明文可见
 15/16-ieee-*256.md                  IEEE GCM-AES-256 官方向量（同帧、256-bit key）
 17-mka-xpn.md                       XPN：套件 ID 进 Distributed SAK，PN64 越过 2^32 回绕

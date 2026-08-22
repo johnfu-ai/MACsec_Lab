@@ -13,7 +13,7 @@
 | [D.05 IEEE 向量：加密](../captures/decoded/05-ieee-encrypt.md) | IEEE GCM-AES-128 官方机密性向量帧 |
 | [D.06 完整会话 13 帧](../captures/decoded/06-session-full.md) | 完整会话故事线（与 [5.3](../05_wire_format/5.3_control_plane_frames.md)/[5.4](../05_wire_format/5.4_data_plane_frames.md) 节同源） |
 | [D.07 EAP 之后的 MKA](../captures/decoded/11-mka-after-eap.md) | EAP-Success 之后：CAK 从 MSK 派生、Authenticator 当 KS |
-| [D.08 SAK 重加密](../captures/decoded/13-mka-rekey.md) | SAK 重加密全过程（AN=0 → AN=1 → 旧钥退役） |
+| [D.08 SAK 换钥](../captures/decoded/13-mka-rekey.md) | SAK 换钥全过程（AN=0 → AN=1 → 旧钥退役） |
 | [D.09 Confidentiality Offset 30](../captures/decoded/14-mka-co30.md) | co=30：前 30 字节只认证不加密 |
 | [D.10 IEEE 向量：完整性 256](../captures/decoded/15-ieee-integrity-256.md) | IEEE GCM-AES-256 官方向量（完整性） |
 | [D.11 IEEE 向量：加密 256](../captures/decoded/16-ieee-encrypt-256.md) | IEEE GCM-AES-256 官方向量（机密性） |
