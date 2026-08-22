@@ -5,7 +5,7 @@
 <p>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 <a href="https://github.com/johnfu-ai/MACsec_Lab"><img src="https://img.shields.io/github/stars/johnfu-ai/MACsec_Lab?style=social" alt="GitHub stars"></a>
-<a href="https://johnfu-ai.gitbook.io/macsec-lab/"><img src="https://img.shields.io/badge/在线阅读-GitBook-brightgreen" alt="Online Reading"></a>
+<a href="https://johnfu-ai.github.io/MACsec_Lab/"><img src="https://img.shields.io/badge/在线阅读-GitHub_Pages-brightgreen" alt="Online Reading"></a>
 <a href="tests/test_protocol.py"><img src="https://img.shields.io/badge/tests-35%20items-blue" alt="Tests"></a>
 <a href="captures/"><img src="https://img.shields.io/badge/captures-15%20pcaps-orange" alt="Captures"></a>
 </p>
@@ -146,7 +146,7 @@ graph LR
 
 ### 在线阅读
 
-👉 **推荐**：[GitBook 在线版](https://johnfu-ai.gitbook.io/macsec-lab/)
+👉 **推荐**：[在线阅读（GitHub Pages）](https://johnfu-ai.github.io/MACsec_Lab/)
 
 ### 本地阅读（Honkit）
 
