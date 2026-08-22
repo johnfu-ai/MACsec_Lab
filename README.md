@@ -190,6 +190,7 @@ sudo make lab     # 可选：netns + veth 线上重放实验
 - 不要把仓库里的密钥、镜像或脚本部署到生产或你没有明确授权的网络。
 - `captures/keys.json` 与代码中的 CAK/SAK 是**演示材料**，一克隆就视为已泄露。
 - 作者不对误用承担责任。
+- 本书的格式，参考了https://github.com/yeasy/ai_security_guide
 
 ---
 
