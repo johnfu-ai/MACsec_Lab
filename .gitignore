@@ -9,4 +9,9 @@ venv/
 # Optional live-lab runtime
 run/
 logs/
+captures/live-session.pcap
 examples/c/secy_frame
+
+# GitBook (Honkit) build artifacts
+node_modules/
+_book/

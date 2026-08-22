@@ -1,4 +1,4 @@
-.PHONY: help test generate analyze all verify lab down clean doctor
+.PHONY: help test generate analyze all verify lab down clean doctor book serve
 
 help:
 	@echo "MACsec Lab"
@@ -9,6 +9,8 @@ help:
 	@echo "  make verify     - tests + tshark protocol checks"
 	@echo "  make lab        - sudo: netns veth replay + live pcap"
 	@echo "  make down       - sudo: remove netns/bridge"
+	@echo "  make book       - build GitBook site into _book/ (Honkit)"
+	@echo "  make serve      - preview GitBook at http://localhost:4000"
 	@echo "  make clean      - remove generated decoded/ and live pcap"
 
 doctor:
@@ -35,6 +37,12 @@ lab:
 
 down:
 	sudo bash scripts/teardown.sh
+
+book:
+	npx honkit build
+
+serve:
+	npx honkit serve
 
 clean:
 	rm -rf captures/decoded captures/live-session.pcap run __pycache__ macsec_lab/__pycache__ tests/__pycache__

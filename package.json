@@ -1,0 +1,17 @@
+{
+    "name": "macsec-lab-book",
+    "version": "1.0.0",
+    "private": true,
+    "description": "MACsec 权威指南 - GitBook (Honkit) 本地构建",
+    "scripts": {
+        "postinstall": "node scripts/patch-mermaid-plugin.js",
+        "serve": "honkit serve",
+        "build": "honkit build",
+        "pdf": "honkit pdf . _book/macsec-guide.pdf"
+    },
+    "devDependencies": {
+        "gitbook-plugin-mermaid-2": "0.0.3",
+        "honkit": "^6.0.0",
+        "mermaid": "^9.4.3"
+    }
+}

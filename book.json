@@ -1,0 +1,14 @@
+{
+    "title": "MACsec 权威指南",
+    "description": "MACsec 权威指南 - IEEE 802.1AE / 802.1X MKA 知识库与可验证实验室",
+    "author": "johnfu-ai",
+    "language": "zh-hans",
+    "plugins": ["mermaid-2"],
+    "ignore": [
+        "/.git",
+        "/node_modules",
+        "/_book",
+        "/run",
+        "/logs"
+    ]
+}

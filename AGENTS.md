@@ -16,8 +16,19 @@ The WSL2 kernel used when the lab was written has `# CONFIG_MACSEC is not set`. 
 | Rebuild pcaps + decoded reports | `make generate` |
 | tshark + tests | `make verify` |
 | Live AF_PACKET replay | `sudo make lab` |
+| Build GitBook site (`_book/`) | `make book` |
+| Preview GitBook at :4000 | `make serve` |
 
 When asked "does it work?", run `make verify` and read the output.
+
+## Book layout (GitBook / Honkit)
+
+The repo is a GitBook (yeasy-style): `SUMMARY.md` at the root is the single source of truth for chapter structure — chapter dirs `NN_topic/` each hold `README.md` (chapter opener), `N.M_slug.md` sections, and `summary.md` (chapter recap). `make book` / `make serve` run Honkit (installed via `npm install`, Node 18+).
+
+- The 15 generated reports under `captures/decoded/` are book pages (Appendix D in SUMMARY.md). `make clean` deletes them and breaks the book build until `make generate` is run again.
+- `gitbook-plugin-mermaid-2` relies on the legacy `head:end` hook that HonKit 6 dropped — pages never load `mermaid.min.js` and diagrams degrade to raw text. `scripts/patch-mermaid-plugin.js` (npm `postinstall`) rewrites the plugin's client script to load the library itself. After a fresh `npm install`, verify the patch ran; verify rendering headlessly with `chromium --headless --dump-dom` and check for `data-processed="true"` + `<svg id="mermaidChart`.
+- When adding a chapter/section: update `SUMMARY.md` first, then create files to match it exactly (titles verbatim).
+- Style contract: Chinese prose, sections open with `## N.M`, mermaid only graph/flowchart/sequenceDiagram with English node labels, figure captions `图 X-N：`, chapter summaries end with the Issue/PR footer.
 
 ## Invariants
 
@@ -37,13 +48,14 @@ When asked "does it work?", run `make verify` and read the output.
 - `macsec_lab/macsec.py` — SecTAG, `XpnPnTracker` (64-bit PN recovery, 802.1AE 10.6), `ReplayWindow` (receive-side replay/delay-protect verdicts, Clause 10)
 - `macsec_lab/mka.py` — MKPDU
 - `macsec_lab/scenario.py` — PSK handshake, EAP-Success + MKA, SAK rekey, co30, XPN story, multi-peer CA, replay window, delay protect, ICMP frames
-- `docs/key-hierarchy.md` — CAK / CKN / KEK / ICK / SAK (PSK vs EAP; SAK is not KDF from CAK)
-- `docs/secy-processing.md` — SecY transmit/receive model, validate-frames modes, discard counters
-- `docs/mka-reference.md` — identifiers, KS election, peer states, per-parameter-set field tables
-- `docs/lifecycle.md` — rekey story (AN/KN rotation, PN exhaustion, SAK retire); capture `mka-rekey.pcap` needs `LabKeys.sak2`
-- `docs/cipher-suites.md` — 128/256/XPN suites; capture `mka-xpn.pcap` needs `LabKeys.sak4` (MKA version 3, non-zero KS SSCI bytes)
-- `docs/attacks.md` / `docs/faq.md` / `docs/glossary.md` / `docs/vs-ipsec.md` — knowledge-base layers (attack analysis, 36 FAQ, 80+ terms, four-protocol comparison)
-- `captures/` — committed pcaps
+- `02_key_hierarchy/` — CAK / CKN / KEK / ICK / SAK (PSK vs EAP; SAK is not KDF from CAK)
+- `03_secy/` — SecY transmit/receive model, validate-frames modes, discard counters
+- `04_mka/` — identifiers, KS election, peer states, per-parameter-set field tables
+- `06_lifecycle/` — rekey story (AN/KN rotation, PN exhaustion, SAK retire); capture `mka-rekey.pcap` needs `LabKeys.sak2`
+- `07_cipher_suites/` — 128/256/XPN suites; capture `mka-xpn.pcap` needs `LabKeys.sak4` (MKA version 3, non-zero KS SSCI bytes)
+- `09_attacks/` / `14_appendix/` — attack analysis, 36 FAQ, 80+ terms, lab spec, report index
+- `12_comparison/` — four-protocol comparison (IPsec/TLS/WireGuard)
+- `captures/` — committed pcaps (+ `decoded/` reports, book Appendix D)
 
 ### Story-key contract (which LabKeys field each capture needs)
 

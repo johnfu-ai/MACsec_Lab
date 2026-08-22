@@ -612,7 +612,7 @@ def macsec_replay(keys: LabKeys) -> list[tuple[str, bytes]]:
     to the originals — same PN means same GCM nonce, so ciphertext and ICV
     are unchanged and still verify. Nothing cryptographic flags a replay;
     only the PN window does. Verdicts live in the frame comments; the model
-    is macsec_lab.macsec.ReplayWindow (see docs/lifecycle.md §3).
+    is macsec_lab.macsec.ReplayWindow (see 06_lifecycle/6.3_replay_window.md).
     """
     a, b = keys.a, keys.b
 
